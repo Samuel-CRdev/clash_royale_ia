@@ -1,18 +1,9 @@
-// USE SEU BACKEND LOCAL ENQUANTO ESTÁ TESTANDO
+// URL DO BACKEND NO RENDER (TROQUE SE O NOME FOR OUTRO)
 const API_URL = "https://clash-royale-ia.onrender.com";
 
-async function selectPlayer(tag) {
-    const resp = await fetch(`${API_URL}/player`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tag })
-    });
-
-    const data = await resp.json();
-    console.log(data);
-}
-
-
+// ----------------------------
+// FUNÇÃO: buscar dados do player
+// ----------------------------
 async function loadPlayer() {
     const tag = document.getElementById("tag").value.trim();
 
@@ -21,35 +12,49 @@ async function loadPlayer() {
         return;
     }
 
-    const res = await fetch(`${backend}/player`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({tag})
-    });
+    try {
+        const res = await fetch(`${API_URL}/player`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tag })
+        });
 
-    const data = await res.json();
-    document.getElementById("player-output").innerText =
-        JSON.stringify(data, null, 2);
+        const data = await res.json();
+
+        document.getElementById("player-output").innerText =
+            JSON.stringify(data, null, 2);
+    } catch (e) {
+        console.error(e);
+        alert("Erro ao carregar jogador.");
+    }
 }
 
+// ----------------------------
+// FUNÇÃO: enviar mensagem ao chat da IA
+// ----------------------------
 async function enviarChat() {
     const msg = document.getElementById("msg").value.trim();
-
     if (!msg) return;
 
-    const res = await fetch(`${backend}/chat`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({mensagem: msg})
-    });
+    try {
+        const res = await fetch(`${API_URL}/chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mensagem: msg })
+        });
 
-    const data = await res.json();
+        const data = await res.json();
 
-    const chatDiv = document.getElementById("chat");
-    chatDiv.innerHTML += `<p><b>Você:</b> ${msg}</p>`;
-    chatDiv.innerHTML += `<p><b>IA:</b> ${data.resposta}</p>`;
+        const chatDiv = document.getElementById("chat");
 
-    chatDiv.scrollTop = chatDiv.scrollHeight;
+        chatDiv.innerHTML += `<p><b>Você:</b> ${msg}</p>`;
+        chatDiv.innerHTML += `<p><b>IA:</b> ${data.resposta}</p>`;
 
-    document.getElementById("msg").value = "";
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+
+        document.getElementById("msg").value = "";
+    } catch (e) {
+        console.error(e);
+        alert("Erro ao enviar mensagem.");
+    }
 }
