@@ -1,5 +1,17 @@
 // USE SEU BACKEND LOCAL ENQUANTO ESTÁ TESTANDO
-const backend = "http://127.0.0.1:10000";
+const API_URL = "https://clash-royale-ia.onrender.com";
+
+async function selectPlayer(tag) {
+    const resp = await fetch(`${API_URL}/player`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tag })
+    });
+
+    const data = await resp.json();
+    console.log(data);
+}
+
 
 async function loadPlayer() {
     const tag = document.getElementById("tag").value.trim();
