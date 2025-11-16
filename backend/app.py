@@ -15,6 +15,9 @@ def home():
 
 @app.route("/player", methods=["POST"])
 def route_player():
+    # Captura o IP REAL do servidor (Render) ou do usuário
+    print(">>> IP REAL DO SERVIDOR (Render):", request.headers.get("X-Forwarded-For"))
+
     data = request.json
     tag = data.get("tag")
 
@@ -23,6 +26,7 @@ def route_player():
 
     player = baixar_tudo_do_jogador(tag)
     return jsonify(player)
+
 
 @app.route("/cards", methods=["GET"])
 def route_cards():
