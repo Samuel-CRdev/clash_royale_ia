@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Clash Royale IA Deckbuilder</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Clash Royale IA Deckbuilder</h1>
+
+<div class="container">
+
+    <div class="input-section">
+        <input id="tag" type="text" placeholder="Digite sua TAG (#ABC123)">
+        <button onclick="loadPlayer()">Carregar Jogador</button>
+    </div>
+
+    <div id="player-output"></div>
+
+    <hr>
+
+    <div class="chat-area">
+        <div id="chat"></div>
+
+        <input id="msg" type="text" placeholder="Mensagem para a IA...">
+        <button onclick="enviarChat()">Enviar</button>
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

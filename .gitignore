@@ -1,0 +1,60 @@
+# ========================
+# PYTHON
+# ========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+
+# Virtual envs
+.env
+env/
+venv/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# ========================
+# CONFIG / TOKENS / .ENV
+# ========================
+.env
+*.env
+.env.local
+.env.prod
+.env.development
+.env.*.local
+
+# Arquivos secretos
+backend/logic/secret.py
+backend/logic/config.py
+
+# ========================
+# FRONTEND
+# ========================
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Cache
+.cache/
+.DS_Store
+
+# ========================
+# OS FILES
+# ========================
+Thumbs.db
