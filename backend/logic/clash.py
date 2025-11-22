@@ -1,141 +1,127 @@
 import os
 import requests
 
-TOKEN = os.getenv("CLASH_API_TOKEN")
+# ------------------------------------------------------------
+# FUNÇÕES DE ACESSO À API OFICIAL DO CLASH ROYALE
+# ------------------------------------------------------------
 
-BASE_URL = "https://api.clashroyale.com/v1"
-
-headers = {
-    "Accept": "application/json",
-    "Authorization": f"Bearer {TOKEN}",
-}
-
-PUBLIC_IP = None
-
-def get_public_ip():
-    global PUBLIC_IP
-    if PUBLIC_IP is None:
-        try:
-            resp = requests.get("https://api.ipify.org", timeout=5)
-            PUBLIC_IP = resp.text.strip()
-        except Exception as e:
-            PUBLIC_IP = f"erro: {e}"
-        print(">>> EGRESS IP DO BACKEND (USE ESSE NA SUPERCELL):", PUBLIC_IP)
-    return PUBLIC_IP
+API_URL = "https://api.clashroyale.com/v1"
+API_KEY = os.getenv("CLASH_API_TOKEN")
 
 
-def baixar_tudo_do_jogador(TAG):
-    # Loga o IP de saída uma vez
-    get_public_ip()
+def _headers():
+    """Cabeçalho de autenticação da API"""
+    return {
+        "Authorization": f"Bearer {API_KEY}",
+        "Accept": "application/json",
+    }
 
-    encoded = TAG.replace("#", "%23")
-    url = f"{BASE_URL}/players/{encoded}"
 
-    # debug extra opcional:
-    print(">>> TOKEN (prefixo):", (TOKEN or "")[:20])
+def baixar_tudo_do_jogador(tag: str):
+    """
+    Faz o download completo dos dados de um jogador pela tag.
+    Exemplo de tag: #2PP
+    """
+    if not tag:
+        raise ValueError("TAG do jogador é obrigatória.")
+    tag = tag.replace("#", "%23")
+    url = f"{API_URL}/players/{tag}"
 
-    response = requests.get(url, headers=headers)
-    print(">>> STATUS SUPERCELL:", response.status_code, response.text[:200])
-    response.raise_for_status()
-
-    return response.json()
+    r = requests.get(url, headers=_headers())
+    if r.status_code != 200:
+        raise ValueError(f"Erro ao acessar jogador: {r.text}")
+    return r.json()
 
 
 def baixar_todas_as_cartas():
-    get_public_ip()
+    """
+    Baixa a lista completa de cartas disponíveis no jogo.
+    """
+    url = f"{API_URL}/cards"
+    r = requests.get(url, headers=_headers())
+    if r.status_code != 200:
+        raise ValueError(f"Erro ao acessar lista de cartas: {r.text}")
+    return r.json().get("items", [])
 
-    url = f"{BASE_URL}/cards"
-    response = requests.get(url, headers=headers)
-    print(">>> STATUS SUPERCELL /cards:", response.status_code, response.text[:200])
-    response.raise_for_status()
 
-    return response.json().get("items", [])
+# ------------------------------------------------------------
+# NORMALIZAÇÃO DE NÍVEIS DE CARTAS E JOGADOR (API ANTIGA -> ATUAL)
+# ------------------------------------------------------------
 
-# ----------------------------
-# Normalização de níveis (API -> jogo atual)
-# ----------------------------
-
-RARITY_ADJUST = {
-    "Common": 0,
-    "Rare": 2,
-    "Epic": 5,
-    "Legendary": 8,
-    "Champion": 10,
+# Conversão oficial baseada em raridade:
+#   Common     1–14 → 13–26 (capado em 15 padrão)
+#   Rare       1–12 → 11–22
+#   Epic       1–9  → 8–16
+#   Legendary  1–6  → 5–10
+#   Champion   1–5  → 4–8
+LEVEL_CONVERSION = {
+    "Common": lambda lvl: lvl + 12,
+    "Rare": lambda lvl: lvl + 10,
+    "Epic": lambda lvl: lvl + 7,
+    "Legendary": lambda lvl: lvl + 4,
+    "Champion": lambda lvl: lvl + 3,
 }
 
 
-def _inferir_raridade(max_level: int | None) -> str | None:
-    """
-    A API usa maxLevel diferente por raridade (formato antigo).
-    Valores típicos:
-      - Common: 13/14+
-      - Rare:   11/12
-      - Epic:   8/9
-      - Legendary: 5/6
-      - Champion: 5
-    """
-    if max_level is None:
-        return None
-
-    if max_level >= 14:   # comuns (ou cartas com muitos níveis)
+def _infer_rarity_from_maxlevel(max_level):
+    """Inferir raridade com base no maxLevel retornado pela API."""
+    if not max_level:
         return "Common"
-    if max_level >= 12:   # raras
+    if max_level >= 14:
+        return "Common"
+    elif max_level >= 12:
         return "Rare"
-    if max_level >= 9:    # épicas
+    elif max_level >= 9:
         return "Epic"
-    if max_level >= 6:    # lendárias
+    elif max_level >= 6:
         return "Legendary"
-    return "Champion"     # campeões, etc.
+    return "Champion"
 
 
-def normalizar_carta(card: dict) -> dict:
-    """
-    Devolve a carta com campos extras:
-      - rarity
-      - levelApi (como vem na API)
-      - levelUi (nível que o jogador enxerga no jogo)
-    """
+def normalize_card(card: dict) -> dict:
+    """Normaliza o nível de uma carta para o formato atual do jogo."""
     if not isinstance(card, dict):
         return card
 
-    max_level = card.get("maxLevel")
-    rarity = card.get("rarity") or _inferir_raridade(max_level)
+    raw_level = card.get("level")
+    rarity = card.get("rarity") or _infer_rarity_from_maxlevel(card.get("maxLevel"))
 
-    nivel_api = card.get("level")
-    nivel_ui = None
-    if isinstance(nivel_api, int):
-        ajuste = RARITY_ADJUST.get(rarity, 0)
-        nivel_ui = nivel_api + ajuste
+    # Corrige nível com base na raridade
+    if isinstance(raw_level, int):
+        convert = LEVEL_CONVERSION.get(rarity, lambda x: x)
+        fixed_level = min(convert(raw_level), 15)  # Limite de 15 para cartas não evoluídas
+    else:
+        fixed_level = raw_level
 
     new_card = dict(card)
     new_card["rarity"] = rarity
-    new_card["levelApi"] = nivel_api
-    new_card["levelUi"] = nivel_ui
+    new_card["levelApi"] = raw_level
+    new_card["levelUi"] = fixed_level  # Nível visível no jogo (corrigido)
 
     return new_card
 
 
-def formatar_jogador(raw: dict) -> dict:
-    """
-    Recebe o JSON cru do /players da API oficial
-    e acrescenta campos com níveis 'arrumados'.
-    """
+def normalize_player(raw: dict) -> dict:
+    """Adapta o jogador completo, incluindo cartas e deck atual, para níveis atuais."""
     if not isinstance(raw, dict):
         return raw
 
     player = dict(raw)
 
-    cards = raw.get("cards") or []
-    current_deck = raw.get("currentDeck") or []
+    # Normaliza todas as cartas e o deck
+    cards = raw.get("cards", [])
+    deck = raw.get("currentDeck", [])
+    player["cards"] = [normalize_card(c) for c in cards]
+    player["currentDeck"] = [normalize_card(c) for c in deck]
 
-    player["cards"] = [normalizar_carta(c) for c in cards]
-    player["currentDeck"] = [normalizar_carta(c) for c in current_deck]
+    # Corrige nível do Rei (expLevel é o nível real)
+    player["kingLevel"] = raw.get("expLevel", 0)
 
-    # expLevel na API é o nível de experiência da conta (Rei).
-    player["kingLevel"] = raw.get("expLevel")
-
-    # Garante que arena sempre exista como dict
+    # Corrige nome e ID da arena
     arena = raw.get("arena") or {}
-    player["arena"] = arena
+    player["arena"] = {
+        "id": arena.get("id", 0),
+        "name": arena.get("name", "Desconhecida"),
+    }
 
     return player
