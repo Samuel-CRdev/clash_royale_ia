@@ -34,7 +34,7 @@ def route_player():
         return jsonify(player)
     except Exception as e:
         print("Erro em /player:", e)
-        return jsonify({"error": "Falha ao carregar jogador. Confira a TAG."}), 500
+        return jsonify({"error": "Falha ao carregar jogador."}), 500
 
 
 @app.route("/cards", methods=["GET"])
