@@ -15,7 +15,7 @@ if not GEMINI_API_KEY:
 genai.configure(api_key=GEMINI_API_KEY)
 
 # Modelo padrão (mais leve que 2.5 pra evitar quota estourando tão fácil)
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+MODEL_NAME = os.getenv("gemini-1.5-flash")
 
 SYSTEM_PROMPT = """
 Você é um agente especialista em Clash Royale, chamado 'Clash Royale IA Deckbuilder'.
