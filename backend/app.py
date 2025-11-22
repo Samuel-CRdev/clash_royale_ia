@@ -1,10 +1,16 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from logic.clash import baixar_tudo_do_jogador, baixar_todas_as_cartas
+
+from logic.clash import (
+    baixar_tudo_do_jogador,
+    baixar_todas_as_cartas,
+    formatar_jogador,
+)
 from logic.chat import enviar_para_ia
 
 app = Flask(__name__)
 CORS(app)
+
 
 @app.route("/")
 def home():
@@ -13,34 +19,55 @@ def home():
         "message": "Clash Royale IA Deckbuilder - Backend ativo!"
     }
 
+
 @app.route("/player", methods=["POST"])
 def route_player():
-    print(">>> IP REAL DO SERVIDOR (Render):", request.headers.get("X-Forwarded-For"))
-
-    data = request.json
-    tag = data.get("tag")
+    data = request.get_json(force=True) or {}
+    tag = (data.get("tag") or "").strip()
 
     if not tag:
-        return {"error": "TAG obrigatória."}, 400
+        return jsonify({"error": "TAG do jogador é obrigatória."}), 400
 
-    player = baixar_tudo_do_jogador(tag)
-    return jsonify(player)
+    try:
+        bruto = baixar_tudo_do_jogador(tag)
+        player = formatar_jogador(bruto)
+        return jsonify(player)
+    except Exception as e:
+        print("Erro no /player:", e)
+        return jsonify({
+            "error": "Não consegui carregar o jogador. Confira a TAG e tente de novo."
+        }), 500
 
 
 @app.route("/cards", methods=["GET"])
 def route_cards():
-    cards = baixar_todas_as_cartas()
-    return jsonify(cards)
+    try:
+        cards = baixar_todas_as_cartas()
+        return jsonify(cards)
+    except Exception as e:
+        print("Erro no /cards:", e)
+        return jsonify({
+            "error": "Não consegui carregar a lista de cartas."
+        }), 500
 
 
 @app.route("/chat", methods=["POST"])
 def route_chat():
-    data = request.json or {}
+    data = request.get_json(force=True) or {}
     mensagem = data.get("mensagem", "")
-    contexto = data.get("contexto")  # agora pode ser dict com player + cards
+    contexto = data.get("contexto")
 
-    resposta = enviar_para_ia(mensagem, contexto)
-    return {"resposta": resposta}
+    if not mensagem:
+        return jsonify({"error": "Mensagem vazia."}), 400
+
+    try:
+        resposta = enviar_para_ia(mensagem, contexto)
+        return jsonify({"resposta": resposta})
+    except Exception as e:
+        print("Erro no /chat:", e)
+        return jsonify({
+            "error": "Falha ao conversar com a IA."
+        }), 500
 
 
 if __name__ == "__main__":

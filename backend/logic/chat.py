@@ -2,94 +2,113 @@ import os
 import json
 import google.generativeai as genai
 
-GEMINI_KEY = os.getenv("GEMINI_API_KEY")  # recebido pela Render
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+if not GOOGLE_API_KEY:
+    raise RuntimeError("GOOGLE_API_KEY não configurada no ambiente.")
 
-if GEMINI_KEY:
-    genai.configure(api_key=GEMINI_KEY)
+genai.configure(api_key=GOOGLE_API_KEY)
 
-AGENT_SYSTEM_PROMPT = """
-Você é um agente especializado em Clash Royale, chamado 'Clash Royale IA Deckbuilder'.
+SYSTEM_PROMPT = """
+Você é um agente especialista em Clash Royale que responde SEMPRE em português do Brasil.
 
-Seu objetivo principal é ajudar o jogador a:
-1. Entender os próprios dados (nível, troféus, arena, histórico, cartas etc.).
-2. Tirar dúvidas sobre cartas, metas, matchups, mecânicas e estratégias.
-3. Montar e ajustar decks de forma inteligente, considerando as cartas que o jogador possui e o nível delas.
-4. Dar dicas práticas para subir troféus, melhorar a rotação, gestão de elixir e decisões de jogo.
+Seu trabalho é:
+- explicar os dados do perfil do jogador (nível, arena, troféus, cartas, deck atual);
+- tirar dúvidas sobre cartas, arenas, mecânicas, modos de jogo e meta;
+- sugerir decks que façam sentido para as cartas e níveis que o jogador já tem.
 
-Regras de comportamento:
-- Responda sempre em português do Brasil.
-- Use linguagem clara e direta, adaptada para iniciantes, mas você pode aprofundar quando fizer sentido.
-- Sempre que sugerir um deck:
-  - Priorize cartas que o jogador possui (com base no contexto recebido).
-  - Se usar alguma carta que não aparece nas cartas do jogador, avise explicitamente que ela pode não estar desbloqueada.
-  - Explique o plano de jogo do deck (condição de vitória, defesa, suportes, possíveis substituições).
-- Use os dados enviados no contexto (JSON do jogador e lista de todas as cartas do jogo) como fonte principal de verdade.
-- Se alguma informação não aparecer no contexto ou parecer desatualizada, seja honesto e responda de forma mais genérica, sem inventar dados específicos.
+REGRAS DE ESTILO
+1) Seja amigável e direto. Por padrão, responda em no máximo 2–4 parágrafos curtos
+   ou em até 8 frases.
+2) Só faça respostas muito longas se o jogador pedir explicitamente mais detalhes.
+3) NUNCA devolva tabelas, markdown, blocos de código ou JSON.
+   Use apenas texto corrido e, quando ajudar, listas simples com "- ".
+4) Você poderá receber um CONTEXTO com dados completos do jogador e uma lista de
+   todas as cartas do jogo em JSON. Use essas informações apenas para raciocinar.
+   Nunca copie nem descreva o JSON literalmente, nem liste todas as cartas.
+
+REGRAS DE CONTEÚDO
+5) Ao montar decks, priorize:
+   - sinergia entre win conditions, suporte e defesa;
+   - curva de elixir razoável (geralmente entre 2,8 e 4,3);
+   - cartas que o jogador tem em níveis mais altos.
+6) Se algo não estiver claro (por exemplo, balanceamentos muito recentes),
+   explique a incerteza em vez de inventar.
+7) Se o jogador não tiver carta X, ofereça alternativas com função parecida.
+
+Sempre fale como se estivesse conversando com o jogador, não com um programador.
 """
 
-# Modelo com prompt de sistema
 model = genai.GenerativeModel(
     model_name="gemini-flash-latest",
-    system_instruction=AGENT_SYSTEM_PROMPT,
+    system_instruction=SYSTEM_PROMPT,
 )
 
-# Sessão de chat com memória
 chat_session = model.start_chat(history=[])
 
 
-def _montar_contexto_texto(contexto):
+def _montar_texto_contexto(contexto):
     """
-    Recebe um dict com:
+    Recebe o 'contexto' vindo do frontend:
     {
-      "player": {...},
-      "cards": [...]
+      "player": { ... },
+      "cards": [ ... ]   # todas as cartas do jogo
     }
-    e transforma em texto que o modelo consiga usar.
+    Transforma em um texto que a IA entende, mas deixa claro
+    que esse JSON não é para ser exibido ao usuário.
     """
     if not contexto:
         return ""
 
-    if isinstance(contexto, str):
-        return contexto
+    if not isinstance(contexto, dict):
+        # fallback se vier string
+        return str(contexto)
 
     partes = []
-    try:
-        jogador = contexto.get("player") or contexto.get("jogador")
-        cartas = contexto.get("cards") or contexto.get("cartas") or contexto.get("all_cards")
 
-        if jogador:
-            partes.append("DADOS ATUAIS DO JOGADOR EM JSON:")
-            partes.append(json.dumps(jogador, ensure_ascii=False))
+    player = contexto.get("player")
+    all_cards = contexto.get("cards")
 
-        if cartas:
-            partes.append("\nLISTA COMPLETA DE CARTAS DO JOGO EM JSON:")
-            partes.append(json.dumps(cartas, ensure_ascii=False))
-    except Exception as e:
-        partes.append(f"[AVISO] Erro ao processar contexto para texto: {e}")
-        partes.append(str(contexto))
+    if player:
+        nome = player.get("name") or "desconhecido"
+        tag = player.get("tag") or "?"
+        exp = player.get("expLevel")
+        king = player.get("kingLevel", exp)
+        tr = player.get("trophies")
+        arena = (player.get("arena") or {}).get("name")
+
+        partes.append(
+            f"Resumo do jogador: nome {nome}, tag {tag}, nível do Rei {king}, "
+            f"troféus {tr}, arena atual {arena}."
+        )
+        partes.append("JSON completo do jogador (NÃO mostrar ao usuário):")
+        partes.append(json.dumps(player, ensure_ascii=False))
+
+    if all_cards:
+        partes.append("Lista completa de cartas do jogo em JSON (NÃO mostrar ao usuário):")
+        partes.append(json.dumps(all_cards, ensure_ascii=False))
 
     return "\n".join(partes)
 
 
 def enviar_para_ia(mensagem, contexto=None):
     """
-    Envia uma mensagem para a IA, incluindo, se disponível,
-    o contexto com dados do jogador e lista de cartas.
+    Envia mensagem para a IA, incluindo (opcionalmente)
+    contexto com dados do jogador e lista de cartas.
     """
-    if contexto:
-        contexto_texto = _montar_contexto_texto(contexto)
-        prompt = f"""{contexto_texto}
+    partes_prompt = []
 
---------------------------------
-Com base APENAS nessas informações de contexto e no seu conhecimento geral de Clash Royale,
-responda à pergunta do jogador abaixo. Não repita o JSON inteiro na resposta, apenas use-o
-mentalmente para fundamentar suas recomendações.
+    ctx_txt = _montar_texto_contexto(contexto)
+    if ctx_txt:
+        partes_prompt.append(
+            "### CONTEXTO (apenas para você, NÃO mostrar ao jogador)\n" + ctx_txt
+        )
 
-PERGUNTA DO JOGADOR:
-{mensagem}
-"""
-    else:
-        prompt = mensagem
+    partes_prompt.append(
+        "### Pergunta do jogador (responda em PT-BR, de forma objetiva, sem tabelas/JSON):"
+    )
+    partes_prompt.append(mensagem)
+
+    prompt = "\n\n".join(partes_prompt)
 
     resposta = chat_session.send_message(prompt)
-    return resposta.text
+    return resposta.text.strip()
