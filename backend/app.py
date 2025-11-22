@@ -4,7 +4,7 @@ from logic.clash import baixar_tudo_do_jogador, baixar_todas_as_cartas
 from logic.chat import enviar_para_ia
 
 app = Flask(__name__)
-CORS(app)  # <<< IMPORTANTE!
+CORS(app)
 
 @app.route("/")
 def home():
@@ -15,7 +15,6 @@ def home():
 
 @app.route("/player", methods=["POST"])
 def route_player():
-    # Captura o IP REAL do servidor (Render) ou do usuário
     print(">>> IP REAL DO SERVIDOR (Render):", request.headers.get("X-Forwarded-For"))
 
     data = request.json
@@ -33,14 +32,16 @@ def route_cards():
     cards = baixar_todas_as_cartas()
     return jsonify(cards)
 
+
 @app.route("/chat", methods=["POST"])
 def route_chat():
-    data = request.json
+    data = request.json or {}
     mensagem = data.get("mensagem", "")
-    contexto = data.get("contexto", "")
+    contexto = data.get("contexto")  # agora pode ser dict com player + cards
 
     resposta = enviar_para_ia(mensagem, contexto)
     return {"resposta": resposta}
+
 
 if __name__ == "__main__":
     import os
