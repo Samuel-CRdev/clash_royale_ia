@@ -1,34 +1,54 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Clash Royale IA Deckbuilder</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+    <h1>Clash Royale IA Deckbuilder</h1>
 
-<h1>Clash Royale IA Deckbuilder</h1>
+    <div class="container">
+        <!-- Lado esquerdo: dados do jogador -->
+        <section class="player-panel">
+            <h2>Dados do Jogador</h2>
+            <div class="tag-input-row">
+                <input id="tag" type="text" placeholder="Digite sua TAG (#ABC123)" />
+                <button id="btn-load-player" onclick="loadPlayer()">Carregar</button>
+            </div>
 
-<div class="container">
+            <div id="player-output" class="player-output">
+                <p class="hint">
+                    Digite sua TAG do Clash Royale e clique em <b>Carregar</b> para ver seus dados
+                    e liberar o chat com a IA.
+                </p>
+            </div>
+        </section>
 
-    <div class="input-section">
-        <input id="tag" type="text" placeholder="Digite sua TAG (#ABC123)">
-        <button onclick="loadPlayer()">Carregar Jogador</button>
+        <!-- Lado direito: chat com a IA -->
+        <section class="chat-panel">
+            <h2>Chat com a IA</h2>
+            <div id="chat" class="chat-log">
+                <div class="chat-message ia">
+                    <div class="bubble">
+                        Olá! Carregue seu perfil e depois me pergunte qualquer coisa sobre seus decks,
+                        cartas e estratégias no Clash Royale.
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-row">
+                <input
+                    id="msg"
+                    type="text"
+                    placeholder="Digite sua mensagem para a IA..."
+                    autocomplete="off"
+                />
+                <button id="btn-send" onclick="enviarChat()">Enviar</button>
+            </div>
+        </section>
     </div>
 
-    <div id="player-output"></div>
-
-    <hr>
-
-    <div class="chat-area">
-        <div id="chat"></div>
-
-        <input id="msg" type="text" placeholder="Mensagem para a IA...">
-        <button onclick="sendChat()">Enviar</button>
-    </div>
-
-</div>
-
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

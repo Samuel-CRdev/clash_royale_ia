@@ -3,11 +3,16 @@ const API_URL = "https://clash-royale-ia.onrender.com";
 
 let cachedPlayer = null;
 let cachedAllCards = null;
+let loadingPlayer = false;
+let loadingCards = false;
 
-// ----------------------------
-// Pré-carregar todas as cartas do jogo
-// ----------------------------
+// ---------------------------------------------
+// Pré-carregar lista completa de cartas do jogo
+// ---------------------------------------------
 async function preloadAllCards() {
+  if (loadingCards || cachedAllCards) return;
+  loadingCards = true;
+
   try {
     const res = await fetch(`${API_URL}/cards`);
     if (!res.ok) {
@@ -17,72 +22,80 @@ async function preloadAllCards() {
     const data = await res.json();
     cachedAllCards = data;
     console.log(
-      "Cartas do jogo carregadas:",
+      "Cartas carregadas:",
       Array.isArray(data) ? data.length : "formato inesperado"
     );
-  } catch (e) {
-    console.warn(
-      "Não consegui pré-carregar as cartas do jogo. O chat ainda funciona, só fica um pouco menos preciso.",
-      e
-    );
+  } catch (err) {
+    console.warn("Erro ao carregar /cards:", err);
+  } finally {
+    loadingCards = false;
   }
 }
 
-window.addEventListener("load", preloadAllCards);
+window.addEventListener("load", () => {
+  preloadAllCards();
+  const msgInput = document.getElementById("msg");
+  if (msgInput) {
+    msgInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        enviarChat();
+      }
+    });
+  }
+});
 
-// ----------------------------
-// FUNÇÃO: buscar dados do player
-// ----------------------------
+// ---------------------------------------------
+// Buscar dados do jogador
+// ---------------------------------------------
 async function loadPlayer() {
-  const tag = document.getElementById("tag").value.trim();
+  if (loadingPlayer) return;
 
+  const tagInput = document.getElementById("tag");
+  const out = document.getElementById("player-output");
+
+  const tag = tagInput.value.trim();
   if (!tag) {
     alert("Digite uma TAG válida.");
     return;
   }
 
+  loadingPlayer = true;
+  out.innerHTML = "<p>Carregando dados do jogador...</p>";
+
   try {
     const res = await fetch(`${API_URL}/player`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tag })
+      body: JSON.stringify({ tag }),
     });
 
-    let data;
-    try {
-      data = await res.json();
-    } catch (e) {
-      console.error("Erro ao parsear JSON:", e);
-      alert("Erro inesperado no servidor.");
-      return;
-    }
-
-    const out = document.getElementById("player-output");
+    const data = await res.json();
 
     if (!res.ok || data.error) {
       out.innerHTML = `<p><b>Erro:</b> ${
         data.error || "Falha ao carregar jogador."
       }</p>`;
+      cachedPlayer = null;
       return;
     }
 
-    // Guarda o jogador em memória para o chat
     cachedPlayer = data;
 
     const nome = data.name || "Desconhecido";
-    const nivelRei = data.kingLevel ?? data.expLevel ?? "??";
+    const king = data.kingLevel ?? data.expLevel ?? "?";
     const trofeus = data.trophies ?? "?";
     const clan = data.clan ? data.clan.name : "Sem clã";
     const arenaNome = data.arena ? data.arena.name : "Desconhecida";
 
     let html = `
       <p><b>Nome:</b> ${nome}</p>
-      <p><b>Nível do Rei (conta):</b> ${nivelRei}</p>
+      <p><b>Nível do Rei:</b> ${king}</p>
       <p><b>Troféus:</b> ${trofeus}</p>
       <p><b>Clã:</b> ${clan}</p>
       <p><b>Arena:</b> ${arenaNome}</p>
       <hr>
-      <p><b>Cartas do jogador:</b></p>
+      <p><b>Cartas do jogador (nível aproximado atual):</b></p>
     `;
 
     if (Array.isArray(data.cards) && data.cards.length > 0) {
@@ -90,7 +103,8 @@ async function loadPlayer() {
       for (const c of data.cards) {
         const nomeCarta = c.name || "Carta desconhecida";
         const nivelUi = c.levelUi ?? c.level ?? "?";
-        html += `<li>${nomeCarta} — nível: ${nivelUi}</li>`;
+        const label = c.powerLabel ? ` (${c.powerLabel})` : "";
+        html += `<li>${nomeCarta} — nível: ${nivelUi}${label}</li>`;
       }
       html += "</ul>";
     } else {
@@ -98,19 +112,40 @@ async function loadPlayer() {
     }
 
     out.innerHTML = html;
-  } catch (e) {
-    console.error(e);
-    alert("Erro ao carregar jogador.");
+
+    // Garante que as cartas globais sejam carregadas também
+    preloadAllCards();
+  } catch (err) {
+    console.error(err);
+    out.innerHTML = "<p><b>Erro:</b> não foi possível carregar o jogador.</p>";
+    cachedPlayer = null;
+  } finally {
+    loadingPlayer = false;
   }
 }
 
-// ----------------------------
-// FUNÇÃO: enviar mensagem ao chat da IA
-// ----------------------------
-async function sendChat() {
-  const msgInput = document.getElementById("msg");
-  const msg = msgInput.value.trim();
+// ---------------------------------------------
+// Chat com a IA
+// ---------------------------------------------
+function addChatMessage(role, text) {
+  const chatDiv = document.getElementById("chat");
+  if (!chatDiv) return;
 
+  const wrapper = document.createElement("div");
+  wrapper.className = `chat-message ${role}`;
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = text;
+
+  wrapper.appendChild(bubble);
+  chatDiv.appendChild(wrapper);
+  chatDiv.scrollTop = chatDiv.scrollHeight;
+}
+
+async function enviarChat() {
+  const input = document.getElementById("msg");
+  const msg = input.value.trim();
   if (!msg) return;
 
   if (!cachedPlayer) {
@@ -118,40 +153,49 @@ async function sendChat() {
     return;
   }
 
+  // Mostra mensagem do usuário
+  addChatMessage("user", msg);
+  input.value = "";
+
+  // Mostra indicador de "pensando"
+  addChatMessage("ia", "Pensando...");
+
   const payload = {
     mensagem: msg,
     contexto: {
       player: cachedPlayer,
-      cards: cachedAllCards
-    }
+      cards: cachedAllCards,
+    },
   };
 
   try {
     const res = await fetch(`${API_URL}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
-    let data;
-    try {
-      data = await res.json();
-    } catch (e) {
-      console.error("Erro ao parsear JSON do chat:", e);
-      alert("Erro inesperado no chat.");
+    const data = await res.json();
+
+    // Remove último "Pensando..." (última mensagem da IA)
+    const chatDiv = document.getElementById("chat");
+    const allMessages = chatDiv.querySelectorAll(".chat-message.ia");
+    const lastIa = allMessages[allMessages.length - 1];
+    if (lastIa && lastIa.textContent.trim() === "Pensando...") {
+      chatDiv.removeChild(lastIa);
+    }
+
+    if (!res.ok || data.error) {
+      addChatMessage(
+        "ia",
+        data.error || "Não consegui responder agora. Tente novamente em instantes."
+      );
       return;
     }
 
-    const chatDiv = document.getElementById("chat");
-    chatDiv.innerHTML += `<p><b>Você:</b> ${msg}</p>`;
-    chatDiv.innerHTML += `<p><b>IA:</b> ${
-      data.resposta || "(sem resposta do servidor)"
-    }</p>`;
-    chatDiv.scrollTop = chatDiv.scrollHeight;
-
-    msgInput.value = "";
-  } catch (e) {
-    console.error(e);
-    alert("Erro ao enviar mensagem.");
+    addChatMessage("ia", data.resposta || "(sem resposta do servidor)");
+  } catch (err) {
+    console.error(err);
+    addChatMessage("ia", "Tive um erro ao responder. Tente novamente.");
   }
 }

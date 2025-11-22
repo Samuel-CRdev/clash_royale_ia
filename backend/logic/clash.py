@@ -1,127 +1,157 @@
 import os
+import math
 import requests
+from typing import Any, Dict, List
 
 # ------------------------------------------------------------
-# FUNÇÕES DE ACESSO À API OFICIAL DO CLASH ROYALE
+# Configuração da API oficial do Clash Royale
 # ------------------------------------------------------------
 
-API_URL = "https://api.clashroyale.com/v1"
-API_KEY = os.getenv("CLASH_API_TOKEN")
+BASE_URL = "https://api.clashroyale.com/v1"
+API_TOKEN = os.getenv("CLASH_API_TOKEN")
 
 
-def _headers():
-    """Cabeçalho de autenticação da API"""
+def _auth_headers() -> Dict[str, str]:
+    if not API_TOKEN:
+        raise RuntimeError("Variável de ambiente CLASH_API_TOKEN não configurada.")
     return {
-        "Authorization": f"Bearer {API_KEY}",
         "Accept": "application/json",
+        "Authorization": f"Bearer {API_TOKEN}",
     }
 
 
-def baixar_tudo_do_jogador(tag: str):
+# ------------------------------------------------------------
+# Funções de acesso cru à API
+# ------------------------------------------------------------
+
+def baixar_tudo_do_jogador(tag: str) -> Dict[str, Any]:
     """
-    Faz o download completo dos dados de um jogador pela tag.
-    Exemplo de tag: #2PP
+    Busca todos os dados de um jogador pela TAG na API oficial.
+    Exemplo de tag: "#2PP" ou "2PP" (o # é tratado automaticamente).
     """
     if not tag:
         raise ValueError("TAG do jogador é obrigatória.")
-    tag = tag.replace("#", "%23")
-    url = f"{API_URL}/players/{tag}"
 
-    r = requests.get(url, headers=_headers())
-    if r.status_code != 200:
-        raise ValueError(f"Erro ao acessar jogador: {r.text}")
-    return r.json()
+    norm_tag = tag.strip()
+    if not norm_tag:
+        raise ValueError("TAG do jogador é obrigatória.")
+
+    if not norm_tag.startswith("#"):
+        norm_tag = "#" + norm_tag
+
+    encoded_tag = norm_tag.replace("#", "%23")
+    url = f"{BASE_URL}/players/{encoded_tag}"
+
+    resp = requests.get(url, headers=_auth_headers(), timeout=15)
+    if resp.status_code != 200:
+        raise RuntimeError(f"Erro ao buscar jogador: {resp.status_code} - {resp.text}")
+    return resp.json()
 
 
-def baixar_todas_as_cartas():
+def baixar_todas_as_cartas() -> List[Dict[str, Any]]:
     """
-    Baixa a lista completa de cartas disponíveis no jogo.
+    Retorna a lista de TODAS as cartas do jogo.
     """
-    url = f"{API_URL}/cards"
-    r = requests.get(url, headers=_headers())
-    if r.status_code != 200:
-        raise ValueError(f"Erro ao acessar lista de cartas: {r.text}")
-    return r.json().get("items", [])
+    url = f"{BASE_URL}/cards"
+    resp = requests.get(url, headers=_auth_headers(), timeout=15)
+    if resp.status_code != 200:
+        raise RuntimeError(f"Erro ao buscar lista de cartas: {resp.status_code} - {resp.text}")
+    data = resp.json()
+    return data.get("items", [])
 
 
 # ------------------------------------------------------------
-# NORMALIZAÇÃO DE NÍVEIS DE CARTAS E JOGADOR (API ANTIGA -> ATUAL)
+# Normalização de níveis (API antiga -> escala atual amigável)
 # ------------------------------------------------------------
 
-# Conversão oficial baseada em raridade:
-#   Common     1–14 → 13–26 (capado em 15 padrão)
-#   Rare       1–12 → 11–22
-#   Epic       1–9  → 8–16
-#   Legendary  1–6  → 5–10
-#   Champion   1–5  → 4–8
-LEVEL_CONVERSION = {
-    "Common": lambda lvl: lvl + 12,
-    "Rare": lambda lvl: lvl + 10,
-    "Epic": lambda lvl: lvl + 7,
-    "Legendary": lambda lvl: lvl + 4,
-    "Champion": lambda lvl: lvl + 3,
-}
+def _calc_level_ui(level_api: Any, max_level_api: Any) -> Dict[str, Any]:
+    """
+    Converte o nível da API antiga (1..maxLevel) para:
+      - levelUi: escala 1..15, proporcional
+      - powerLabel: 'baixo' | 'médio' | 'alto' | 'máximo'
+    Não é uma conversão oficial 1:1, mas produz um número
+    coerente visualmente e, principalmente, preserva a noção
+    de quão perto a carta está do máximo.
+    """
+    if not isinstance(level_api, int) or not isinstance(max_level_api, int) or max_level_api <= 0:
+        return {"levelUi": level_api, "powerLabel": None}
+
+    ratio = level_api / max_level_api  # 0..1
+    # Escala para 1..15
+    level_ui = max(1, min(15, int(round(ratio * 15))))
+
+    if ratio >= 0.95:
+        label = "máximo"
+    elif ratio >= 0.75:
+        label = "alto"
+    elif ratio >= 0.4:
+        label = "médio"
+    else:
+        label = "baixo"
+
+    return {"levelUi": level_ui, "powerLabel": label}
 
 
-def _infer_rarity_from_maxlevel(max_level):
-    """Inferir raridade com base no maxLevel retornado pela API."""
-    if not max_level:
-        return "Common"
-    if max_level >= 14:
-        return "Common"
-    elif max_level >= 12:
-        return "Rare"
-    elif max_level >= 9:
-        return "Epic"
-    elif max_level >= 6:
-        return "Legendary"
-    return "Champion"
-
-
-def normalize_card(card: dict) -> dict:
-    """Normaliza o nível de uma carta para o formato atual do jogo."""
+def normalize_card(card: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Devolve a carta com campos extras amigáveis:
+      - rarity
+      - levelApi
+      - maxLevelApi
+      - levelUi  (1..15, escala normalizada)
+      - powerLabel ('baixo'/'médio'/'alto'/'máximo')
+    """
     if not isinstance(card, dict):
         return card
 
-    raw_level = card.get("level")
-    rarity = card.get("rarity") or _infer_rarity_from_maxlevel(card.get("maxLevel"))
-
-    # Corrige nível com base na raridade
-    if isinstance(raw_level, int):
-        convert = LEVEL_CONVERSION.get(rarity, lambda x: x)
-        fixed_level = min(convert(raw_level), 15)  # Limite de 15 para cartas não evoluídas
-    else:
-        fixed_level = raw_level
-
     new_card = dict(card)
+
+    rarity = card.get("rarity")
+    level_api = card.get("level")
+    max_level_api = card.get("maxLevel")
+
     new_card["rarity"] = rarity
-    new_card["levelApi"] = raw_level
-    new_card["levelUi"] = fixed_level  # Nível visível no jogo (corrigido)
+    new_card["levelApi"] = level_api
+    new_card["maxLevelApi"] = max_level_api
+
+    info = _calc_level_ui(level_api, max_level_api)
+    new_card["levelUi"] = info["levelUi"]
+    new_card["powerLabel"] = info["powerLabel"]
 
     return new_card
 
 
-def normalize_player(raw: dict) -> dict:
-    """Adapta o jogador completo, incluindo cartas e deck atual, para níveis atuais."""
+def normalize_player(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Recebe o JSON cru do jogador e adiciona campos
+    normalizados e amigáveis para a IA e o frontend.
+    """
     if not isinstance(raw, dict):
         return raw
 
     player = dict(raw)
 
-    # Normaliza todas as cartas e o deck
-    cards = raw.get("cards", [])
-    deck = raw.get("currentDeck", [])
-    player["cards"] = [normalize_card(c) for c in cards]
-    player["currentDeck"] = [normalize_card(c) for c in deck]
+    # Nível do Rei
+    player["kingLevel"] = raw.get("expLevel")
 
-    # Corrige nível do Rei (expLevel é o nível real)
-    player["kingLevel"] = raw.get("expLevel", 0)
-
-    # Corrige nome e ID da arena
+    # Arena (garantir estrutura simples)
     arena = raw.get("arena") or {}
     player["arena"] = {
-        "id": arena.get("id", 0),
-        "name": arena.get("name", "Desconhecida"),
+        "id": arena.get("id"),
+        "name": arena.get("name") or "Arena desconhecida",
     }
 
+    # Cartas do jogador
+    cards = raw.get("cards") or []
+    player["cards"] = [normalize_card(c) for c in cards]
+
+    # Deck atual
+    current_deck = raw.get("currentDeck") or []
+    player["currentDeck"] = [normalize_card(c) for c in current_deck]
+
     return player
+
+
+# Alias para compatibilidade com versões antigas do código
+def formatar_jogador(raw: Dict[str, Any]) -> Dict[str, Any]:
+    return normalize_player(raw)

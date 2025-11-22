@@ -1,110 +1,151 @@
 import os
 import json
+from typing import Any, Dict, Optional
+
 import google.generativeai as genai
 
-GOOGLE_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GOOGLE_API_KEY:
-    raise RuntimeError("GOOGLE_API_KEY não configurada no ambiente.")
+# ------------------------------------------------------------
+# Configuração do Gemini
+# ------------------------------------------------------------
 
-genai.configure(api_key=GOOGLE_API_KEY)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise RuntimeError("Variável de ambiente GEMINI_API_KEY não configurada.")
+
+genai.configure(api_key=GEMINI_API_KEY)
+
+# Modelo padrão (mais leve que 2.5 pra evitar quota estourando tão fácil)
+MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
 SYSTEM_PROMPT = """
-Você é um agente especialista em Clash Royale que responde SEMPRE em português do Brasil.
+Você é um agente especialista em Clash Royale, chamado 'Clash Royale IA Deckbuilder'.
 
-Seu trabalho é:
-- explicar os dados do perfil do jogador (nível, arena, troféus, cartas, deck atual);
-- tirar dúvidas sobre cartas, arenas, mecânicas, modos de jogo e meta;
-- sugerir decks que façam sentido para as cartas e níveis que o jogador já tem.
+Seu objetivo é:
+- analisar o perfil do jogador (nível, arena, troféus, cartas, deck atual);
+- tirar dúvidas sobre cartas, arenas, metas, matchups e mecânicas do jogo;
+- sugerir e ajustar decks de acordo com as cartas que o jogador possui;
+- dar dicas práticas para subir troféus e jogar melhor.
 
-REGRAS DE ESTILO
-1) Seja amigável e direto. Por padrão, responda em no máximo 2–4 parágrafos curtos
-   ou em até 8 frases.
-2) Só faça respostas muito longas se o jogador pedir explicitamente mais detalhes.
-3) NUNCA devolva tabelas, markdown, blocos de código ou JSON.
-   Use apenas texto corrido e, quando ajudar, listas simples com "- ".
-4) Você poderá receber um CONTEXTO com dados completos do jogador e uma lista de
-   todas as cartas do jogo em JSON. Use essas informações apenas para raciocinar.
-   Nunca copie nem descreva o JSON literalmente, nem liste todas as cartas.
+REGRAS IMPORTANTES:
+1) Responda SEMPRE em português do Brasil.
+2) Use um tom amigável e direto, como se estivesse conversando com um amigo.
+3) Por padrão, seja objetivo: 2 a 4 parágrafos curtos ou algumas listas simples.
+   Só faça respostas longas se o jogador pedir mais detalhes.
+4) Você receberá um CONTEXTO com:
+   - JSON completo do jogador (com níveis normalizados em 'levelUi' e 'powerLabel');
+   - Lista completa de cartas do jogo.
+   Use esse contexto apenas para raciocinar.
+   NÃO copie nem mostre o JSON cru na resposta.
+5) Sobre níveis:
+   - Use os campos 'levelUi' e 'powerLabel' para entender quão forte está a carta.
+   - Evite falar o número do nível o tempo todo.
+   - Quando o nível for relevante, cite de forma moderada ("suas cartas-chave estão em níveis altos").
+6) Não invente dados da conta do jogador. Se algo não aparecer no contexto, seja honesto.
+7) Ao sugerir decks:
+   - priorize cartas que o jogador possui;
+   - considere as cartas em nível mais alto;
+   - explique o plano de jogo (condição de vitória, defesa, suporte, feitiços);
+   - se usar alguma carta que talvez ele não tenha, avise.
 
-REGRAS DE CONTEÚDO
-5) Ao montar decks, priorize:
-   - sinergia entre win conditions, suporte e defesa;
-   - curva de elixir razoável (geralmente entre 2,8 e 4,3);
-   - cartas que o jogador tem em níveis mais altos.
-6) Se algo não estiver claro (por exemplo, balanceamentos muito recentes),
-   explique a incerteza em vez de inventar.
-7) Se o jogador não tiver carta X, ofereça alternativas com função parecida.
-
-Sempre fale como se estivesse conversando com o jogador, não com um programador.
+NUNCA responda com JSON, tabelas ou blocos de código. Use apenas texto normal, com listas usando "- " quando ajudar.
 """
 
 model = genai.GenerativeModel(
-    model_name="gemini-flash-latest",
+    model_name=MODEL_NAME,
     system_instruction=SYSTEM_PROMPT,
 )
 
+# Sessão única, suficiente para uso pessoal/protótipo
 chat_session = model.start_chat(history=[])
 
 
-def _montar_texto_contexto(contexto):
+def _contexto_para_texto(contexto: Any) -> str:
     """
-    Recebe o 'contexto' vindo do frontend:
+    Converte o contexto vindo do frontend em um texto que ajude a IA,
+    sem ser mostrado diretamente ao jogador.
+    Espera algo como:
     {
-      "player": { ... },
-      "cards": [ ... ]   # todas as cartas do jogo
+      "player": {...},
+      "cards": [...]
     }
-    Transforma em um texto que a IA entende, mas deixa claro
-    que esse JSON não é para ser exibido ao usuário.
     """
     if not contexto:
         return ""
 
+    # Se vier em formato estranho, só faz um dump simples
     if not isinstance(contexto, dict):
-        # fallback se vier string
-        return str(contexto)
+        return f"(Contexto bruto)\n{str(contexto)}"
 
     partes = []
 
     player = contexto.get("player")
     all_cards = contexto.get("cards")
 
-    if player:
-        nome = player.get("name") or "desconhecido"
+    # Resumo amigável do jogador
+    if isinstance(player, dict):
+        nome = player.get("name") or "Desconhecido"
         tag = player.get("tag") or "?"
-        exp = player.get("expLevel")
-        king = player.get("kingLevel", exp)
-        tr = player.get("trophies")
+        king = player.get("kingLevel")
+        trofeus = player.get("trophies")
         arena = (player.get("arena") or {}).get("name")
 
         partes.append(
             f"Resumo do jogador: nome {nome}, tag {tag}, nível do Rei {king}, "
-            f"troféus {tr}, arena atual {arena}."
+            f"{trofeus} troféus, arena atual: {arena}."
         )
-        partes.append("JSON completo do jogador (NÃO mostrar ao usuário):")
+
+        # Destacar deck atual de forma compacta
+        current_deck = player.get("currentDeck") or []
+        if current_deck:
+            nomes_deck = []
+            for c in current_deck:
+                if not isinstance(c, dict):
+                    continue
+                nome_c = c.get("name")
+                lvl = c.get("levelUi")
+                if nome_c:
+                    if isinstance(lvl, int):
+                        nomes_deck.append(f"{nome_c} (nívelUi {lvl})")
+                    else:
+                        nomes_deck.append(nome_c)
+            if nomes_deck:
+                partes.append(
+                    "Deck atual (segundo a API, com nívelUi aproximado): "
+                    + ", ".join(nomes_deck)
+                )
+
+        # Guardar JSON completo para raciocínio
+        partes.append("\nJSON COMPLETO DO JOGADOR (não mostrar ao usuário):")
         partes.append(json.dumps(player, ensure_ascii=False))
 
-    if all_cards:
-        partes.append("Lista completa de cartas do jogo em JSON (NÃO mostrar ao usuário):")
-        partes.append(json.dumps(all_cards, ensure_ascii=False))
+    # Lista completa de cartas do jogo (não mostrar)
+    if isinstance(all_cards, list) and all_cards:
+        partes.append("\nLISTA COMPLETA DE CARTAS DO JOGO (não mostrar ao usuário):")
+        try:
+            partes.append(json.dumps(all_cards, ensure_ascii=False))
+        except TypeError:
+            partes.append("(Não foi possível serializar todas as cartas.)")
 
     return "\n".join(partes)
 
 
-def enviar_para_ia(mensagem, contexto=None):
+def enviar_para_ia(mensagem: str, contexto: Optional[Any] = None) -> str:
     """
-    Envia mensagem para a IA, incluindo (opcionalmente)
-    contexto com dados do jogador e lista de cartas.
+    Envia uma mensagem do jogador para a IA, incluindo (opcionalmente)
+    o contexto com dados do jogador e cartas do jogo.
     """
     partes_prompt = []
 
-    ctx_txt = _montar_texto_contexto(contexto)
+    ctx_txt = _contexto_para_texto(contexto)
     if ctx_txt:
         partes_prompt.append(
-            "### CONTEXTO (apenas para você, NÃO mostrar ao jogador)\n" + ctx_txt
+            "### CONTEXTO (INVISÍVEL PARA O JOGADOR, APENAS PARA RACIOCINAR)\n"
+            + ctx_txt
         )
 
     partes_prompt.append(
-        "### Pergunta do jogador (responda em PT-BR, de forma objetiva, sem tabelas/JSON):"
+        "### PERGUNTA DO JOGADOR (responda em PT-BR, de forma amigável e objetiva, "
+        "sem mostrar JSON nem tabelas):"
     )
     partes_prompt.append(mensagem)
 
