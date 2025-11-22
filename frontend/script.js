@@ -54,7 +54,7 @@ async function loadPlayer() {
   const tagInput = document.getElementById("tag");
   const out = document.getElementById("player-output");
 
-  const tag = tagInput.value.trim();
+  const tag = tagInput.value.trim().toUppercase();
   if (!tag) {
     alert("Digite uma TAG válida.");
     return;
