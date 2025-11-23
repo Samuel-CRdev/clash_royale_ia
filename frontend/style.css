@@ -5,7 +5,9 @@
     font-style: normal;
 }
 
-/* -------------------- RESET -------------------- */
+/* -------------------------------------------------------
+   RESET E CONFIGURAÇÃO GLOBAL
+-------------------------------------------------------- */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -43,7 +45,9 @@ body {
     margin: 0 auto;
 }
 
-/* -------------------- PAINÉIS -------------------- */
+/* -------------------------------------------------------
+   PAINÉIS PRINCIPAIS
+-------------------------------------------------------- */
 .player-panel,
 .chat-panel {
     background: rgba(36, 19, 59, 0.9);
@@ -56,7 +60,7 @@ body {
     flex: 0.9;
     min-width: 260px;
     max-height: 100%;
-    overflow: hidden; /* painel nunca scrolla a página */
+    overflow: hidden;
 }
 
 .chat-panel {
@@ -65,7 +69,9 @@ body {
     flex-direction: column;
 }
 
-/* -------------------- PAINEL JOGADOR -------------------- */
+/* -------------------------------------------------------
+   PAINEL DO JOGADOR
+-------------------------------------------------------- */
 .panel-title {
     text-align: center;
     font-size: 22px;
@@ -78,33 +84,30 @@ body {
     border: 2px solid rgba(255,255,255,0.15);
     border-radius: 12px;
     padding: 14px;
-    overflow: hidden; /* EVITA SCROLL GLOBAL */
+    overflow: hidden;
 }
 
-.player-info-top {
-    margin-bottom: 12px;
-}
-
-/* TAG + BOTÃO dentro da caixa */
+/* TAG + BOTÃO REMODELADOS (BOTÃO AGORA EMBAIXO) */
 .tag-input-row.inside-box {
     display: flex;
+    flex-direction: column; /* <-- botão vai para baixo */
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 14px;
 }
 
 #tag {
-    flex: 1.2;
+    width: 100%;
     height: 44px;
     border-radius: 12px;
     background: #10172a;
     border: 2px solid #3b82f6;
-    padding: 0 2px;
+    padding: 0 14px;
     font-size: 15px;
     color: white;
 }
 
 #btn-load-player {
-    flex: 1;
+    width: 100%;
     height: 44px;
     border-radius: 12px;
     font-size: 15px;
@@ -113,9 +116,15 @@ body {
     color: white;
     border: none;
     cursor: pointer;
+    transition: 0.1s ease;
 }
 
-/* CAIXA DE INFORMAÇÕES */
+#btn-load-player:hover {
+    filter: brightness(1.15);
+    transform: translateY(-2px);
+}
+
+/* BLOCO DE INFO DO PLAYER */
 .player-info-box {
     background: rgba(15, 25, 55, 0.8);
     border: 1px solid #233a80;
@@ -126,13 +135,13 @@ body {
 
 .section-title {
     color: #ffe075;
-    margin-right: 2px;
 }
 
-/* -------------------- CARTAS -------------------- */
-/* BLOCO COM SCROLL INTERNO */
+/* -------------------------------------------------------
+   CARTAS
+-------------------------------------------------------- */
 .cards-scroll-box {
-    max-height: 220px;  /* APENAS ISSO TEM SCROLL */
+    max-height: 220px;
     overflow-y: auto;
     padding-right: 6px;
 }
@@ -152,14 +161,16 @@ body {
 }
 
 .card img {
-    width: 50px;   /* ÍCONE MENOR → não vaza */
+    width: 50px; /* menor para não vazar */
 }
 
 .card span {
     font-size: 12px;
 }
 
-/* -------------------- CHAT -------------------- */
+/* -------------------------------------------------------
+   CHAT
+-------------------------------------------------------- */
 .chat-title {
     text-align: center;
     font-size: 22px;
@@ -167,7 +178,7 @@ body {
     color: #9bcdff;
 }
 
-/* CHAT FIXO, COM SCROLL INTERNO */
+/* CHAT FIXO COM SCROLL */
 .chat-log {
     height: 350px;
     overflow-y: auto;
@@ -195,6 +206,7 @@ body {
     max-width: 80%;
     padding: 8px 10px;
     border-radius: 14px;
+    line-height: 1.35;
 }
 
 .chat-message.user .bubble {
@@ -207,7 +219,7 @@ body {
     color: #e5e7eb;
 }
 
-/* input mensagem */
+/* Input do chat */
 .chat-input-row {
     display: flex;
     gap: 8px;
@@ -235,7 +247,9 @@ body {
     cursor: pointer;
 }
 
-/* -------------------- MOBILE -------------------- */
+/* -------------------------------------------------------
+   MOBILE
+-------------------------------------------------------- */
 @media (max-width: 600px) {
     .container {
         flex-direction: column;
