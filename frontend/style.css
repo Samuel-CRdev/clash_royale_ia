@@ -39,11 +39,11 @@ body {
 }
 
 /* -------------------------------------------------------
-   LAYOUT EM COLUNA (PLANNER PLAYER EM CIMA, CHAT EMBAIXO)
+   LAYOUT EM COLUNA (PLAYER EM CIMA, CHAT EMBAIXO)
 -------------------------------------------------------- */
 .container {
     display: flex;
-    flex-direction: column;   /* <-- AQUI: sempre empilhado, não mais lado a lado */
+    flex-direction: column;   /* sempre empilhado */
     gap: 16px;
     max-width: 900px;
     margin: 0 auto;
@@ -58,11 +58,10 @@ body {
     border-radius: 16px;
     padding: 16px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-    width: 100%;           /* planner ocupa toda a largura disponível */
+    width: 100%;
 }
 
 .player-panel {
-    /* painel inteiro visível, sem scroll próprio */
     overflow: visible;
 }
 
@@ -86,7 +85,6 @@ body {
     border: 2px solid rgba(255,255,255,0.15);
     border-radius: 12px;
     padding: 14px;
-    /* sem scroll aqui – só o bloco das cartas rola */
     overflow: visible;
 }
 
@@ -146,17 +144,45 @@ body {
 }
 
 /* -------------------------------------------------------
+   HEADER DAS CARTAS + FILTROS
+-------------------------------------------------------- */
+.cards-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.cards-filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.cards-filters select {
+    background: #020617;
+    color: #e5e7eb;
+    border: 1px solid #64748b;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    outline: none;
+}
+
+/* -------------------------------------------------------
    CARTAS – APENAS ESTE BLOCO TEM SCROLL
 -------------------------------------------------------- */
 .cards-scroll-box {
-    max-height: 220px;
-    overflow-y: auto;   /* scroll interno só aqui */
+    max-height: 260px;        /* desktop: altura razoável */
+    overflow-y: auto;
     padding-right: 6px;
 }
 
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(5, 1fr);  /* 5 cartas por linha */
     gap: 8px;
 }
 
@@ -173,7 +199,7 @@ body {
 }
 
 .card span {
-    font-size: 12px;
+    font-size: 11px;
 }
 
 /* -------------------------------------------------------
@@ -186,10 +212,10 @@ body {
     color: #9bcdff;
 }
 
-/* CHAT FIXO COM SCROLL PRÓPRIO (SEM SEGUNDO SCROLL DENTRO) */
+/* CHAT FIXO COM SCROLL PRÓPRIO */
 .chat-log {
-    height: 350px;         /* bloco fixo, não estica infinito */
-    overflow-y: auto;      /* scroll só aqui */
+    height: 380px;
+    overflow-y: auto;
     background: rgba(0,0,0,0.25);
     padding: 12px;
     border-radius: 12px;
@@ -272,15 +298,16 @@ body {
         max-width: 100%;
     }
 
+    /* cartas ainda em 5 colunas, mas menores */
     .card img {
-        width: 45px;
+        width: 44px;
     }
 
     .cards-scroll-box {
-        max-height: 180px;
+        max-height: 50vh;   /* player ocupa boa parte da tela */
     }
 
     .chat-log {
-        height: 320px;
+        height: 60vh;       /* chat quase "tela cheia" */
     }
 }
