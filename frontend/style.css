@@ -1,6 +1,3 @@
-/* =========================================================
-   FONTE CLASH ROYALE
-========================================================= */
 @font-face {
     font-family: 'ClashFont';
     src: url('./fonts/Clash_Regular.otf') format('opentype');
@@ -8,9 +5,7 @@
     font-style: normal;
 }
 
-/* =========================================================
-   REGRAS GERAIS
-========================================================= */
+/* -------------------- RESET -------------------- */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -26,11 +21,10 @@ body {
     padding: 24px;
 }
 
-h1, .main-title {
+.main-title {
     text-align: center;
-    margin-bottom: 24px;
+    margin-bottom: 6px;
     font-size: 32px;
-    letter-spacing: 0.05em;
     color: #f5d26b;
     text-shadow: 0 0 8px #000;
 }
@@ -39,8 +33,7 @@ h1, .main-title {
     text-align: center;
     font-size: 14px;
     opacity: 0.7;
-    margin-top: -12px;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .container {
@@ -50,9 +43,7 @@ h1, .main-title {
     margin: 0 auto;
 }
 
-/* =========================================================
-   PAINÉIS PRINCIPAIS
-========================================================= */
+/* -------------------- PAINÉIS -------------------- */
 .player-panel,
 .chat-panel {
     background: rgba(36, 19, 59, 0.9);
@@ -62,80 +53,69 @@ h1, .main-title {
 }
 
 .player-panel {
-    flex: 0.8;
-    min-width: 280px;
+    flex: 0.9;
+    min-width: 260px;
+    max-height: 100%;
+    overflow: hidden; /* painel nunca scrolla a página */
 }
 
 .chat-panel {
-    flex: 3;
+    flex: 2.5;
     display: flex;
     flex-direction: column;
 }
 
-/* =========================================================
-   PAINEL DO JOGADOR — CLASH STYLE
-========================================================= */
+/* -------------------- PAINEL JOGADOR -------------------- */
 .panel-title {
-    font-size: 22px;
     text-align: center;
+    font-size: 22px;
     color: #f3c23a;
-    text-shadow: 0 0 8px #000;
     margin-bottom: 12px;
 }
 
 .player-output {
-    background: rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.05);
     border: 2px solid rgba(255,255,255,0.15);
     border-radius: 12px;
     padding: 14px;
-    max-height: calc(100vh - 260px);
-    overflow-y: auto;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+    overflow: hidden; /* EVITA SCROLL GLOBAL */
 }
 
-/* Caixa contendo TAG + botão */
 .player-info-top {
-    margin-bottom: 15px;
-}
-
-.tag-input-row.inside-box {
-    display: flex;
-    gap: 8px;
     margin-bottom: 12px;
 }
 
-/* Input de TAG */
+/* TAG + BOTÃO dentro da caixa */
+.tag-input-row.inside-box {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
 #tag {
     flex: 2;
-    height: 48px;
-    padding: 0 16px;
+    height: 44px;
     border-radius: 12px;
-    border: 2px solid #3b82f6;
     background: #10172a;
-    color: white;
+    border: 2px solid #3b82f6;
+    padding: 0 14px;
     font-size: 15px;
+    color: white;
 }
 
-/* Botão CARREGAR */
 #btn-load-player {
     flex: 1;
-    height: 48px;
-    font-size: 15px;
+    height: 44px;
     border-radius: 12px;
-    border: none;
-    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
     background: linear-gradient(135deg, #22c55e, #16a34a);
     color: white;
-    font-weight: 600;
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
+    border: none;
+    cursor: pointer;
 }
 
-#btn-load-player:hover {
-    filter: brightness(1.08);
-    transform: translateY(-1px);
-}
-
-/* Caixas internas */
+/* CAIXA DE INFORMAÇÕES */
 .player-info-box {
     background: rgba(15, 25, 55, 0.8);
     border: 1px solid #233a80;
@@ -146,59 +126,56 @@ h1, .main-title {
 
 .section-title {
     color: #ffe075;
-    margin-right: 4px;
+    margin-right: 2px;
 }
 
-/* CARTAS */
+/* -------------------- CARTAS -------------------- */
+/* BLOCO COM SCROLL INTERNO */
+.cards-scroll-box {
+    max-height: 220px;  /* APENAS ISSO TEM SCROLL */
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
 .card-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 8px;
+    gap: 8px;
 }
 
 .card {
     background: rgba(0,0,0,0.35);
     padding: 4px;
     border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.1);
     text-align: center;
+    border: 1px solid rgba(255,255,255,0.12);
 }
 
 .card img {
-    width: 70px;
-    border-radius: 6px;
+    width: 50px;   /* ÍCONE MENOR → não vaza */
 }
 
 .card span {
     font-size: 12px;
-    margin-top: 3px;
-    display: block;
 }
 
-/* Hint */
-.hint {
-    color: #9ca3af;
-    font-size: 13px;
-}
-
-/* =========================================================
-   CHAT
-========================================================= */
+/* -------------------- CHAT -------------------- */
 .chat-title {
-    font-size: 24px;
     text-align: center;
+    font-size: 22px;
     margin-bottom: 12px;
     color: #9bcdff;
 }
 
+/* CHAT FIXO, COM SCROLL INTERNO */
 .chat-log {
-    flex: 1;
-    background: rgba(0,0,0,0.25);
-    border-radius: 12px;
-    padding: 12px;
+    height: 350px;
     overflow-y: auto;
+    background: rgba(0,0,0,0.25);
+    padding: 12px;
+    border-radius: 12px;
     margin-bottom: 10px;
+    padding-right: 6px;
 }
 
 .chat-message {
@@ -214,25 +191,23 @@ h1, .main-title {
     justify-content: flex-start;
 }
 
-.chat-message .bubble {
+.bubble {
     max-width: 80%;
     padding: 8px 10px;
     border-radius: 14px;
 }
 
-/* BOLHA DO USUÁRIO */
 .chat-message.user .bubble {
     background: #007bff;
     color: white;
 }
 
-/* BOLHA DA IA */
 .chat-message.ia .bubble {
     background: #020617;
     color: #e5e7eb;
 }
 
-/* Input do chat */
+/* input mensagem */
 .chat-input-row {
     display: flex;
     gap: 8px;
@@ -241,11 +216,11 @@ h1, .main-title {
 .chat-input-row input {
     flex: 1;
     height: 45px;
-    padding: 0 14px;
     border-radius: 12px;
     border: 2px solid #465776;
     background: #10172a;
     color: white;
+    padding: 0 14px;
     font-size: 15px;
 }
 
@@ -255,68 +230,26 @@ h1, .main-title {
     font-size: 15px;
     border-radius: 12px;
     background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    border: none;
+    cursor: pointer;
 }
 
-/* =========================================================
-   MOBILE (ATÉ 600PX)
-========================================================= */
+/* -------------------- MOBILE -------------------- */
 @media (max-width: 600px) {
-
-    .container {
-        flex-direction: column;
-    }
-
-    h1 {
-        font-size: 24px;
-    }
-
-    .panel-title, .chat-title {
-        font-size: 18px;
-    }
-
-    /* TAG + botão maiores */
-    #tag, #btn-load-player {
-        height: 48px;
-        font-size: 15px;
-    }
-
-    /* cartas menores em mobile */
-    .card img {
-        width: 60px;
-    }
-
-    .card-grid {
-        gap: 10px;
-    }
-
-    /* chat menor para caber na tela */
-    .chat-log {
-        max-height: 55vh;
-    }
-
-    .player-output {
-        max-height: calc(100vh - 220px);
-    }
-}
-
-/* =========================================================
-   TABLETS (600–900PX)
-========================================================= */
-@media (max-width: 900px) {
-
     .container {
         flex-direction: column;
     }
 
     .card img {
-        width: 65px;
+        width: 45px;
     }
 
-    #tag, #btn-load-player {
-        height: 46px;
+    .cards-scroll-box {
+        max-height: 180px;
     }
 
     .chat-log {
-        max-height: 60vh;
+        height: 300px;
     }
 }

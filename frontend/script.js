@@ -1,178 +1,160 @@
-// URL DO BACKEND
+// URL do backend
 const API_URL = "https://clash-royale-ia.onrender.com";
 
 let cachedPlayer = null;
 let cachedAllCards = null;
-let loadingPlayer = false;
-let loadingCards = false;
 let contextoEnviado = false;
+let loadingPlayer = false;
 
-
-// ------------------------------------------------------------
-// Pré-carregar lista de cartas
-// ------------------------------------------------------------
+/* ----------------------------------------------
+   Preload das cartas
+---------------------------------------------- */
 async function preloadAllCards() {
-  if (loadingCards || cachedAllCards) return;
-  loadingCards = true;
-
-  try {
-    const res = await fetch(`${API_URL}/cards`);
-    if (!res.ok) return;
-
-    const data = await res.json();
-    cachedAllCards = data;
-  } catch (e) {
-    console.warn("Falha ao carregar cartas:", e);
-  } finally {
-    loadingCards = false;
-  }
+    try {
+        const res = await fetch(`${API_URL}/cards`);
+        cachedAllCards = await res.json();
+    } catch (e) {
+        console.warn("Falha ao carregar cartas:", e);
+    }
 }
+window.addEventListener("load", preloadAllCards);
 
-window.addEventListener("load", () => {
-  preloadAllCards();
-});
-
-
-// ------------------------------------------------------------
-// Carregar jogador
-// ------------------------------------------------------------
+/* ----------------------------------------------
+   Carregar Jogador
+---------------------------------------------- */
 async function loadPlayer() {
-  if (loadingPlayer) return;
+    if (loadingPlayer) return;
 
-  const tag = document.getElementById("tag").value.trim().toUpperCase();
-  const out = document.getElementById("player-output");
+    const tag = document.getElementById("tag").value.trim().toUpperCase();
+    const out = document.getElementById("player-output");
 
-  if (!tag) {
-    alert("Digite uma TAG válida.");
-    return;
-  }
+    if (!tag) return alert("Digite uma TAG válida.");
 
-  loadingPlayer = true;
-  out.innerHTML = "<p>Carregando dados...</p>";
-  contextoEnviado = false;
+    loadingPlayer = true;
+    contextoEnviado = false;
+    out.innerHTML = "<p>Carregando dados...</p>";
 
-  try {
-    const res = await fetch(`${API_URL}/player`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tag })
-    });
+    try {
+        const res = await fetch(`${API_URL}/player`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tag })
+        });
+        const data = await res.json();
 
-    const data = await res.json();
+        if (!res.ok || data.error) {
+            out.innerHTML = `<p><b>Erro:</b> ${data.error}</p>`;
+            return;
+        }
 
-    if (!res.ok || data.error) {
-      out.innerHTML = `<p><b>Erro:</b> ${data.error || "Falha ao carregar"}</p>`;
-      return;
+        cachedPlayer = data;
+
+        const nome = data.name;
+        const king = data.kingLevel;
+        const trophies = data.trophies;
+        const arena = data.arena?.name;
+
+        let html = `
+            <div class="player-info-top">
+                <div class="tag-input-row inside-box">
+                    <input id="tag" type="text" placeholder="Digite sua TAG (#ABC123)" value="${tag}" />
+                    <button id="btn-load-player" onclick="loadPlayer()">Carregar</button>
+                </div>
+            </div>
+
+            <div class="player-info-box">
+                <p><span class="section-title">Nome:</span> ${nome}</p>
+                <p><span class="section-title">Rei:</span> ${king}</p>
+                <p><span class="section-title">Troféus:</span> ${trophies}</p>
+                <p><span class="section-title">Arena:</span> ${arena}</p>
+            </div>
+
+            <div class="player-info-box">
+                <p class="section-title">Cartas</p>
+
+                <div class="cards-scroll-box">
+                    <div class="card-grid">
+        `;
+
+        for (const c of data.cards) {
+            const url = c.iconUrls?.medium || c.iconUrls?.small || "";
+            html += `
+                <div class="card">
+                    <img src="${url}">
+                    <span>Nv ${c.levelUi}</span>
+                </div>
+            `;
+        }
+
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+
+        out.innerHTML = html;
+
+    } catch {
+        out.innerHTML = "<p>Erro ao carregar jogador.</p>";
     }
 
-    cachedPlayer = data;
-
-    const nome = data.name;
-    const king = data.kingLevel;
-    const trofeus = data.trophies;
-    const arena = data.arena?.name;
-
-    let html = `
-      <div class="player-info-box">
-          <p><span class="section-title">Nome:</span> ${nome}</p>
-          <p><span class="section-title">Rei:</span> ${king}</p>
-          <p><span class="section-title">Troféus:</span> ${trofeus}</p>
-          <p><span class="section-title">Arena:</span> ${arena}</p>
-      </div>
-
-      <div class="player-info-box">
-          <p class="section-title">Cartas</p>
-          <div class="card-grid">
-    `;
-
-    for (const c of data.cards) {
-      const url = c.iconUrls?.medium || c.iconUrls?.small || "";
-      html += `
-          <div class="card">
-              <img src="${url}">
-              <span>Nv ${c.levelUi}</span>
-          </div>
-      `;
-    }
-
-    html += `
-          </div>
-      </div>
-    `;
-
-    out.innerHTML = html;
-
-  } catch (e) {
-    out.innerHTML = "<p>Erro ao carregar jogador.</p>";
-  } finally {
     loadingPlayer = false;
-  }
 }
 
-
-// ------------------------------------------------------------
-// Chat
-// ------------------------------------------------------------
+/* ----------------------------------------------
+   Chat
+---------------------------------------------- */
 function addChatMessage(role, text) {
-  const chat = document.getElementById("chat");
+    const chat = document.getElementById("chat");
 
-  const wrapper = document.createElement("div");
-  wrapper.className = `chat-message ${role}`;
+    const msg = document.createElement("div");
+    msg.className = `chat-message ${role}`;
 
-  const bubble = document.createElement("div");
-  bubble.className = "bubble";
-  bubble.textContent = text;
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;
 
-  wrapper.appendChild(bubble);
-  chat.appendChild(wrapper);
+    msg.appendChild(bubble);
+    chat.appendChild(msg);
 
-  chat.scrollTop = chat.scrollHeight;
+    chat.scrollTop = chat.scrollHeight;
 }
 
 async function enviarChat() {
-  const input = document.getElementById("msg");
-  const msg = input.value.trim();
-  if (!msg) return;
+    const input = document.getElementById("msg");
+    const msg = input.value.trim();
+    if (!msg) return;
 
-  if (!cachedPlayer) {
-    alert("Carregue um jogador primeiro.");
-    return;
-  }
+    if (!cachedPlayer) return alert("Carregue um jogador primeiro.");
 
-  addChatMessage("user", msg);
-  input.value = "";
+    addChatMessage("user", msg);
+    input.value = "";
 
-  addChatMessage("ia", "Pensando...");
+    addChatMessage("ia", "Pensando...");
 
-  let payload;
+    let payload = contextoEnviado
+        ? { mensagem: msg }
+        : { mensagem: msg, contexto: { player: cachedPlayer, cards: cachedAllCards } };
 
-  if (!contextoEnviado) {
-    payload = {
-      mensagem: msg,
-      contexto: { player: cachedPlayer, cards: cachedAllCards }
-    };
     contextoEnviado = true;
-  } else {
-    payload = { mensagem: msg };
-  }
 
-  try {
-    const res = await fetch(`${API_URL}/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+    try {
+        const res = await fetch(`${API_URL}/chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
 
-    const data = await res.json();
+        const data = await res.json();
+        const chat = document.getElementById("chat");
 
-    const chat = document.getElementById("chat");
-    const iaMsgs = chat.querySelectorAll(".chat-message.ia");
-    const lastIa = iaMsgs[iaMsgs.length - 1];
-    if (lastIa.textContent === "Pensando...") lastIa.remove();
+        const iaThinking = chat.querySelectorAll(".chat-message.ia");
+        const lastIa = iaThinking[iaThinking.length - 1];
+        if (lastIa && lastIa.textContent.includes("Pensando")) lastIa.remove();
 
-    addChatMessage("ia", data.resposta);
+        addChatMessage("ia", data.resposta);
 
-  } catch (e) {
-    addChatMessage("ia", "Erro ao enviar.");
-  }
+    } catch {
+        addChatMessage("ia", "Erro ao enviar.");
+    }
 }

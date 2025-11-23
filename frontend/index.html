@@ -2,11 +2,10 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8" />
-    <link rel="shortcut icon" href="favicon/logodeckbuilder.png" type="image/png">
-    <link rel="icon" href="favicon/logodeckbuilder.png" type="image/png">
     <title>Clash Royale IA Deckbuilder</title>
     <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
     <h1 class="main-title">Clash Royale IA Deckbuilder</h1>
@@ -14,7 +13,7 @@
 
     <div class="container">
 
-        <!-- PAINEL ESQUERDO (REDESENHADO) -->
+        <!-- PAINEL ESQUERDO -->
         <section class="player-panel">
 
             <h2 class="panel-title">Perfil do Jogador</h2>
@@ -33,10 +32,10 @@
                 </div>
 
             </div>
+
         </section>
 
-
-        <!-- PAINEL DIREITO: CHAT AUMENTADO -->
+        <!-- PAINEL DIREITO (CHAT) -->
         <section class="chat-panel">
             <h2 class="chat-title">Chat com a IA</h2>
 
@@ -53,13 +52,13 @@
                 <input
                     id="msg"
                     type="text"
-                    placeholder="Digite sua mensagem para a IA..."
+                    placeholder="Digite sua mensagem..."
                     autocomplete="off"
                 />
                 <button id="btn-send" onclick="enviarChat()">Enviar</button>
             </div>
-
         </section>
+
     </div>
 
     <script src="script.js"></script>
