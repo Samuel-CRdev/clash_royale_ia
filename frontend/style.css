@@ -38,10 +38,14 @@ body {
     margin-bottom: 24px;
 }
 
+/* -------------------------------------------------------
+   LAYOUT EM COLUNA (PLANNER PLAYER EM CIMA, CHAT EMBAIXO)
+-------------------------------------------------------- */
 .container {
     display: flex;
+    flex-direction: column;   /* <-- AQUI: sempre empilhado, não mais lado a lado */
     gap: 16px;
-    max-width: 1300px;
+    max-width: 900px;
     margin: 0 auto;
 }
 
@@ -54,17 +58,15 @@ body {
     border-radius: 16px;
     padding: 16px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    width: 100%;           /* planner ocupa toda a largura disponível */
 }
 
 .player-panel {
-    flex: 0.9;
-    min-width: 260px;
-    max-height: 100%;
-    overflow: hidden;
+    /* painel inteiro visível, sem scroll próprio */
+    overflow: visible;
 }
 
 .chat-panel {
-    flex: 2.5;
     display: flex;
     flex-direction: column;
 }
@@ -84,7 +86,8 @@ body {
     border: 2px solid rgba(255,255,255,0.15);
     border-radius: 12px;
     padding: 14px;
-    overflow: hidden;
+    /* sem scroll aqui – só o bloco das cartas rola */
+    overflow: visible;
 }
 
 .player-info-top {
@@ -93,7 +96,7 @@ body {
 
 /* TAG + BOTÃO (BOTÃO EMBAIXO DO INPUT) */
 .tag-input-row.inside-box {
-    display: block !important; /* força layout em bloco, não flex */
+    display: block;
     margin-bottom: 14px;
 }
 
@@ -107,7 +110,7 @@ body {
     font-size: 15px;
     color: white;
     display: block;
-    margin-bottom: 8px; /* espaço entre input e botão */
+    margin-bottom: 8px;
 }
 
 #btn-load-player {
@@ -143,11 +146,11 @@ body {
 }
 
 /* -------------------------------------------------------
-   CARTAS
+   CARTAS – APENAS ESTE BLOCO TEM SCROLL
 -------------------------------------------------------- */
 .cards-scroll-box {
     max-height: 220px;
-    overflow-y: auto;
+    overflow-y: auto;   /* scroll interno só aqui */
     padding-right: 6px;
 }
 
@@ -183,10 +186,10 @@ body {
     color: #9bcdff;
 }
 
-/* CHAT FIXO COM SCROLL */
+/* CHAT FIXO COM SCROLL PRÓPRIO (SEM SEGUNDO SCROLL DENTRO) */
 .chat-log {
-    height: 350px;
-    overflow-y: auto;
+    height: 350px;         /* bloco fixo, não estica infinito */
+    overflow-y: auto;      /* scroll só aqui */
     background: rgba(0,0,0,0.25);
     padding: 12px;
     border-radius: 12px;
@@ -256,8 +259,17 @@ body {
    MOBILE
 -------------------------------------------------------- */
 @media (max-width: 600px) {
+
+    body {
+        padding: 16px;
+    }
+
+    .main-title {
+        font-size: 26px;
+    }
+
     .container {
-        flex-direction: column;
+        max-width: 100%;
     }
 
     .card img {
@@ -269,6 +281,6 @@ body {
     }
 
     .chat-log {
-        height: 300px;
+        height: 320px;
     }
 }

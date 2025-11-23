@@ -136,22 +136,24 @@ async function loadPlayer() {
 
       // Fórmula geral:
       //  - API: level 1..maxLevelApi (depende da raridade)
-      //  - UI:  níveis 1..14 (15 = Elite)
+      //  - UI:  níveis 1..14 (15 reservado para Elite se a API trouxer)
       //  - startUi = 15 - maxLevelApi
       //  - levelUi = startUi + (levelApi - 1) = levelApi + (14 - maxLevelApi)
       let levelUi = levelApi + (14 - maxLevelApi);
 
-      // Clamp entre 1 e 14 inicialmente
+      // Clamp entre 1 e 15 (se algum dia a API mandar Elite real)
       if (levelUi < 1) levelUi = 1;
-      if (levelUi > 14) levelUi = 14;
+      if (levelUi > 15) levelUi = 15;
 
-      // Se tiver evolução (carta evoluída), tratamos como nível 15 (Elite)
+      // Evolução: NÃO altera o nível da carta.
+      // Apenas marcamos que ela é evoluída e qual o nível da evolução.
       const evolutionLevel = Number(c.evolutionLevel ?? 0);
+      let evolutionTag = "";
       if (Number.isFinite(evolutionLevel) && evolutionLevel > 0) {
-        levelUi = 15;
+        evolutionTag = ` • Evo ${evolutionLevel}`;
       }
 
-      // Rótulo qualitativo
+      // Rótulo qualitativo por nível
       let status;
       if (levelUi === 15) status = "Elite";
       else if (levelUi === 14) status = "Máx";
@@ -163,11 +165,12 @@ async function loadPlayer() {
       // Guardar no objeto para a IA também enxergar
       c.levelUi = levelUi;
       c.levelStatus = status;
+      c.evolutionUi = evolutionLevel;
 
       html += `
         <div class="card">
           <img src="${url}" alt="${c.name || "Carta"}">
-          <span>${c.name || "Carta"} — Nv ${levelUi} (${status})</span>
+          <span>${c.name || "Carta"} — Nv ${levelUi} (${status})${evolutionTag}</span>
         </div>
       `;
     }
