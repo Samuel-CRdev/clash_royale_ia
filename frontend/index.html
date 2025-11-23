@@ -6,28 +6,34 @@
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <h1>Clash Royale IA Deckbuilder</h1>
-    <h2>Developed by Samuel Batista</h2>
+
+    <h1 class="main-title">Clash Royale IA Deckbuilder</h1>
+    <h2 class="dev-title">Developed by Samuel Batista</h2>
+
     <div class="container">
-        <!-- Lado esquerdo: dados do jogador -->
+
+        <!-- PAINEL ESQUERDO (REDESENHADO) -->
         <section class="player-panel">
-            <h2>Dados do Jogador</h2>
+
+            <h2 class="panel-title">Perfil do Jogador</h2>
+
             <div class="tag-input-row">
                 <input id="tag" type="text" placeholder="Digite sua TAG (#ABC123)" />
                 <button id="btn-load-player" onclick="loadPlayer()">Carregar</button>
             </div>
 
-            <div id="player-output" class="player-output">
+            <div id="player-output" class="player-output redesigned">
                 <p class="hint">
-                    Digite sua TAG do Clash Royale e clique em <b>Carregar</b> para ver seus dados
-                    e liberar o chat com a IA.
+                    Digite sua TAG do Clash Royale e clique em <b>Carregar</b> para ver seus dados e liberar o chat.
                 </p>
             </div>
+
         </section>
 
-        <!-- Lado direito: chat com a IA -->
+        <!-- PAINEL DIREITO: CHAT AUMENTADO -->
         <section class="chat-panel">
-            <h2>Chat com a IA</h2>
+            <h2 class="chat-title">Chat com a IA</h2>
+
             <div id="chat" class="chat-log">
                 <div class="chat-message ia">
                     <div class="bubble">
@@ -46,6 +52,7 @@
                 />
                 <button id="btn-send" onclick="enviarChat()">Enviar</button>
             </div>
+
         </section>
     </div>
 

@@ -1,15 +1,15 @@
-// URL DO BACKEND NO RENDER
+// URL DO BACKEND
 const API_URL = "https://clash-royale-ia.onrender.com";
 
 let cachedPlayer = null;
 let cachedAllCards = null;
 let loadingPlayer = false;
 let loadingCards = false;
-let contextoEnviado = false; // <--- IMPORTANTE
+let contextoEnviado = false;
 
 
 // ------------------------------------------------------------
-// Pré-carregar lista completa de cartas
+// Pré-carregar lista de cartas
 // ------------------------------------------------------------
 async function preloadAllCards() {
   if (loadingCards || cachedAllCards) return;
@@ -21,7 +21,6 @@ async function preloadAllCards() {
 
     const data = await res.json();
     cachedAllCards = data;
-    console.log("Cartas carregadas:", data.length);
   } catch (e) {
     console.warn("Falha ao carregar cartas:", e);
   } finally {
@@ -31,27 +30,18 @@ async function preloadAllCards() {
 
 window.addEventListener("load", () => {
   preloadAllCards();
-
-  const msgInput = document.getElementById("msg");
-  msgInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      enviarChat();
-    }
-  });
 });
 
 
 // ------------------------------------------------------------
-// Carregar Jogador
+// Carregar jogador
 // ------------------------------------------------------------
 async function loadPlayer() {
   if (loadingPlayer) return;
 
-  const tagInput = document.getElementById("tag");
+  const tag = document.getElementById("tag").value.trim().toUpperCase();
   const out = document.getElementById("player-output");
 
-  const tag = tagInput.value.trim().toUpperCase();
   if (!tag) {
     alert("Digite uma TAG válida.");
     return;
@@ -59,50 +49,60 @@ async function loadPlayer() {
 
   loadingPlayer = true;
   out.innerHTML = "<p>Carregando dados...</p>";
-  contextoEnviado = false; // <--- RESETAR AO CARREGAR PLAYER NOVO
+  contextoEnviado = false;
 
   try {
     const res = await fetch(`${API_URL}/player`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tag }),
+      body: JSON.stringify({ tag })
     });
 
     const data = await res.json();
 
     if (!res.ok || data.error) {
       out.innerHTML = `<p><b>Erro:</b> ${data.error || "Falha ao carregar"}</p>`;
-      cachedPlayer = null;
       return;
     }
 
     cachedPlayer = data;
 
-    const nome = data.name || "Desconhecido";
+    const nome = data.name;
     const king = data.kingLevel;
     const trofeus = data.trophies;
-    const arena = data.arena ? data.arena.name : "Arena";
+    const arena = data.arena?.name;
 
     let html = `
-      <p><b>Nome:</b> ${nome}</p>
-      <p><b>Nível do Rei:</b> ${king}</p>
-      <p><b>Troféus:</b> ${trofeus}</p>
-      <p><b>Arena:</b> ${arena}</p>
-      <hr>
-      <p><b>Cartas:</b></p>
-      <ul>
+      <div class="player-info-box">
+          <p><span class="section-title">Nome:</span> ${nome}</p>
+          <p><span class="section-title">Rei:</span> ${king}</p>
+          <p><span class="section-title">Troféus:</span> ${trofeus}</p>
+          <p><span class="section-title">Arena:</span> ${arena}</p>
+      </div>
+
+      <div class="player-info-box">
+          <p class="section-title">Cartas</p>
+          <div class="card-grid">
     `;
 
     for (const c of data.cards) {
-      html += `<li>${c.name} — nível: ${c.levelUi} (${c.powerLabel})</li>`;
+      const url = c.iconUrls?.medium || c.iconUrls?.small || "";
+      html += `
+          <div class="card">
+              <img src="${url}">
+              <span>Nv ${c.levelUi}</span>
+          </div>
+      `;
     }
 
-    html += "</ul>";
+    html += `
+          </div>
+      </div>
+    `;
 
     out.innerHTML = html;
 
   } catch (e) {
-    console.error(e);
     out.innerHTML = "<p>Erro ao carregar jogador.</p>";
   } finally {
     loadingPlayer = false;
@@ -111,10 +111,11 @@ async function loadPlayer() {
 
 
 // ------------------------------------------------------------
-// Chat com a IA
+// Chat
 // ------------------------------------------------------------
 function addChatMessage(role, text) {
-  const chatDiv = document.getElementById("chat");
+  const chat = document.getElementById("chat");
+
   const wrapper = document.createElement("div");
   wrapper.className = `chat-message ${role}`;
 
@@ -123,16 +124,16 @@ function addChatMessage(role, text) {
   bubble.textContent = text;
 
   wrapper.appendChild(bubble);
-  chatDiv.appendChild(wrapper);
+  chat.appendChild(wrapper);
 
-  chatDiv.scrollTop = chatDiv.scrollHeight;
+  chat.scrollTop = chat.scrollHeight;
 }
-
 
 async function enviarChat() {
   const input = document.getElementById("msg");
   const msg = input.value.trim();
   if (!msg) return;
+
   if (!cachedPlayer) {
     alert("Carregue um jogador primeiro.");
     return;
@@ -145,18 +146,13 @@ async function enviarChat() {
 
   let payload;
 
-  // PRIMEIRA MENSAGEM: enviar contexto completo
   if (!contextoEnviado) {
     payload = {
       mensagem: msg,
-      contexto: {
-        player: cachedPlayer,
-        cards: cachedAllCards
-      }
+      contexto: { player: cachedPlayer, cards: cachedAllCards }
     };
     contextoEnviado = true;
   } else {
-    // MENSAGENS SEGUINTES: somente texto
     payload = { mensagem: msg };
   }
 
@@ -164,28 +160,19 @@ async function enviarChat() {
     const res = await fetch(`${API_URL}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
 
     const data = await res.json();
 
-    // Remove "Pensando..."
-    const chatDiv = document.getElementById("chat");
-    const iaMessages = chatDiv.querySelectorAll(".chat-message.ia");
-    const lastIa = iaMessages[iaMessages.length - 1];
-    if (lastIa && lastIa.textContent === "Pensando...") {
-      lastIa.remove();
-    }
-
-    if (!res.ok || data.error) {
-      addChatMessage("ia", data.error || "Erro ao responder.");
-      return;
-    }
+    const chat = document.getElementById("chat");
+    const iaMsgs = chat.querySelectorAll(".chat-message.ia");
+    const lastIa = iaMsgs[iaMsgs.length - 1];
+    if (lastIa.textContent === "Pensando...") lastIa.remove();
 
     addChatMessage("ia", data.resposta);
 
-  } catch (err) {
-    console.error(err);
-    addChatMessage("ia", "Erro ao enviar mensagem.");
+  } catch (e) {
+    addChatMessage("ia", "Erro ao enviar.");
   }
 }
