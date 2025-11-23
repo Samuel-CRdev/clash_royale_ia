@@ -92,9 +92,11 @@ body {
 /* Grid de cartas */
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, 62px);
+    grid-template-columns: repeat(3, 1fr); /* sempre 3 colunas */
     gap: 10px;
+    margin-top: 8px;
 }
+
 
 .card {
     background: rgba(0,0,0,0.35);
@@ -184,8 +186,8 @@ body {
 }
 
 input[type="text"] {
-    flex: 1;
-    padding: 8px 11px;
+    flex: 0.5;
+    padding: 8px 10px;
     border-radius: 999px;
     border: 1px solid #465776;
     background: #10172a;
@@ -193,7 +195,7 @@ input[type="text"] {
 }
 
 button {
-    padding: 8px 14px;
+    padding: 8px 10px;
     border-radius: 999px;
     border: none;
     cursor: pointer;
@@ -206,4 +208,8 @@ button {
     .container {
         flex-direction: column;
     }
+}
+/* Aumentar leve espaçamento entre linhas */
+body, p, span, li, input, button, .bubble {
+    line-height: 1.35; /* ajuste fino, pode trocar para 1.40 se quiser mais */
 }

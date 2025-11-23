@@ -40,21 +40,7 @@ REGRAS IMPORTANTES:
    - explique o plano de jogo de forma resumida (ataque, defesa);
    - se usar alguma carta que talvez ele não tenha, avise.
 
-NUNCA responda com JSON, tabelas ou blocos de código. Use apenas texto normal.
-
-Exemplo: "Baseado no meta atual e nos níveis das cartas na sua conta, montei o melhor deck possível:
-
-PEKKA - Evolução, Nivel 15
-Esqueletos - Evolução, Nivel 14
-Mago elétrico - Nivel 14
-Tornado - Nivel 15
-Poison - Nível 13
-Babê dragão - Nível 13
-Dart Goblin - Nível 14
-Cavaleiro - Nível 13
-
-'Separe em paragrafos sobre como jogar'
-"
+NUNCA responda com JSON, tabelas ou blocos de código. Use apenas texto normal. Tente pular parágrafos quando necessário, para uma visão mais clara.
 """
 
 # Criar modelo e sessão com histórico
