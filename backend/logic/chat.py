@@ -41,15 +41,16 @@ REGRAS IMPORTANTES:
 NUNCA responda com JSON, tabelas ou blocos de código. Use apenas texto normal.
 """
 
-# Criar modelo e sessão com histórico
+# Criar modelo
 model = genai.GenerativeModel(
     model_name=MODEL_NAME,
     system_instruction=SYSTEM_PROMPT,
 )
 
+# Sessão de chat global (vamos reiniciar quando chegar novo contexto)
 chat_session = model.start_chat(history=[])
 
-# Contexto guardado na memória (apenas 1 vez)
+# Contexto guardado na memória (último contexto recebido)
 chat_context_cached = None
 
 
@@ -97,33 +98,38 @@ def _contexto_para_texto(contexto: Any) -> str:
         partes.append("Lista completa de cartas do jogo (não mostrar ao usuário):")
         try:
             partes.append(json.dumps(all_cards, ensure_ascii=False))
-        except:
+        except Exception:
             partes.append("(Não foi possível serializar)")
 
     return "\n".join(partes)
 
 
 # ------------------------------------------------------------
-# Salvar o contexto inicial UMA VEZ
+# Salvar o contexto (sempre sobrescreve para o último jogador)
 # ------------------------------------------------------------
 def registrar_contexto_inicial(contexto):
     global chat_context_cached
-    if chat_context_cached is None:
-        chat_context_cached = contexto
+    chat_context_cached = contexto
 
 
 # ------------------------------------------------------------
 # Função principal: enviar mensagem à IA
 # ------------------------------------------------------------
 def enviar_para_ia(mensagem: str, contexto: Optional[Any] = None) -> str:
-    global chat_context_cached
+    global chat_context_cached, chat_session
 
     # -------------------------------------------
-    # PRIMEIRA MENSAGEM → Contexto é enviado
+    # SE VEIO CONTEXTO → NOVO JOGADOR / NOVA CONVERSA
     # -------------------------------------------
-    if chat_context_cached is None and contexto:
+    if contexto:
+        # guarda o novo contexto (sobrescreve o anterior)
         registrar_contexto_inicial(contexto)
-        contexto_txt = _contexto_para_texto(contexto)
+
+        # transforma em texto interno pra IA
+        contexto_txt = _contexto_para_texto(chat_context_cached)
+
+        # REINICIA A SESSÃO DE CHAT para não misturar jogador antigo com novo
+        chat_session = model.start_chat(history=[])
 
         prompt = f"""
 ### CONTEXTO INICIAL (não mostrar ao usuário)
@@ -131,14 +137,18 @@ def enviar_para_ia(mensagem: str, contexto: Optional[Any] = None) -> str:
 
 ### PRIMEIRA MENSAGEM DO JOGADOR:
 {mensagem}
-        """
+        """.strip()
 
         resposta = chat_session.send_message(prompt)
         return resposta.text.strip()
 
     # -------------------------------------------
-    # MENSAGENS SEGUINTES → Só a mensagem
+    # MENSAGENS SEGUINTES → Só continua a conversa atual
     # -------------------------------------------
+    if chat_session is None:
+        # fallback de segurança: se por algum motivo não houver sessão, cria uma nova
+        chat_session = model.start_chat(history=[])
+
     prompt = f"Jogador: {mensagem}"
     resposta = chat_session.send_message(prompt)
     return resposta.text.strip()
