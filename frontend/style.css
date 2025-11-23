@@ -1,3 +1,6 @@
+/* =========================================================
+   FONTE CLASH ROYALE
+========================================================= */
 @font-face {
     font-family: 'ClashFont';
     src: url('./fonts/Clash_Regular.otf') format('opentype');
@@ -5,25 +8,29 @@
     font-style: normal;
 }
 
-/* Fonte padrão */
+/* =========================================================
+   REGRAS GERAIS
+========================================================= */
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
     font-family: 'ClashFont', system-ui, sans-serif;
+    line-height: 1.35;
 }
 
 body {
-    background: radial-gradient(circle at top, #3c66da 0%, #020617 60%);
+    background: radial-gradient(circle at top, #3c66da 0, #020617 55%);
     color: #e5e7eb;
     min-height: 100vh;
     padding: 24px;
 }
 
-.main-title {
+h1, .main-title {
     text-align: center;
+    margin-bottom: 24px;
     font-size: 32px;
-    margin-bottom: 4px;
+    letter-spacing: 0.05em;
     color: #f5d26b;
     text-shadow: 0 0 8px #000;
 }
@@ -32,47 +39,100 @@ body {
     text-align: center;
     font-size: 14px;
     opacity: 0.7;
-    margin-bottom: 24px;
+    margin-top: -12px;
+    margin-bottom: 20px;
 }
 
 .container {
     display: flex;
-    gap: 18px;
+    gap: 16px;
     max-width: 1300px;
     margin: 0 auto;
 }
 
-
-/* ---------------------------------------------------
-   PAINEL DO JOGADOR — REDESENHADO
---------------------------------------------------- */
-.player-panel {
-    flex: 0.8;
-    min-width: 260px;
-
-    background: linear-gradient(180deg, #0b1c46, #0e234d);
-    border: 3px solid #1d3a7a;
-    border-radius: 18px;
-    padding: 18px;
-    box-shadow: 0 0 20px rgba(0, 80, 255, 0.3);
+/* =========================================================
+   PAINÉIS PRINCIPAIS
+========================================================= */
+.player-panel,
+.chat-panel {
+    background: rgba(36, 19, 59, 0.9);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
+.player-panel {
+    flex: 0.8;
+    min-width: 280px;
+}
+
+.chat-panel {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+}
+
+/* =========================================================
+   PAINEL DO JOGADOR — CLASH STYLE
+========================================================= */
 .panel-title {
     font-size: 22px;
     text-align: center;
     color: #f3c23a;
-    margin-bottom: 12px;
     text-shadow: 0 0 8px #000;
+    margin-bottom: 12px;
 }
 
-.player-output.redesigned {
+.player-output {
     background: rgba(255,255,255,0.06);
     border: 2px solid rgba(255,255,255,0.15);
     border-radius: 12px;
     padding: 14px;
-    overflow-y: auto;
     max-height: calc(100vh - 260px);
+    overflow-y: auto;
     box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+}
+
+/* Caixa contendo TAG + botão */
+.player-info-top {
+    margin-bottom: 15px;
+}
+
+.tag-input-row.inside-box {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+/* Input de TAG */
+#tag {
+    flex: 2;
+    height: 48px;
+    padding: 0 16px;
+    border-radius: 12px;
+    border: 2px solid #3b82f6;
+    background: #10172a;
+    color: white;
+    font-size: 15px;
+}
+
+/* Botão CARREGAR */
+#btn-load-player {
+    flex: 1;
+    height: 48px;
+    font-size: 15px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
+}
+
+#btn-load-player:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
 }
 
 /* Caixas internas */
@@ -89,14 +149,13 @@ body {
     margin-right: 4px;
 }
 
-/* Grid de cartas */
+/* CARTAS */
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* sempre 3 colunas */
-    gap: 10px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
     margin-top: 8px;
 }
-
 
 .card {
     background: rgba(0,0,0,0.35);
@@ -107,7 +166,7 @@ body {
 }
 
 .card img {
-    width: 55px;
+    width: 70px;
     border-radius: 6px;
 }
 
@@ -117,24 +176,18 @@ body {
     display: block;
 }
 
-/* ---------------------------------------------------
-   CHAT
---------------------------------------------------- */
-.chat-panel {
-    flex: 3; /* CHAT É A PRIORIDADE */
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-
-    background: rgba(36, 19, 59, 0.95);
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+/* Hint */
+.hint {
+    color: #9ca3af;
+    font-size: 13px;
 }
 
+/* =========================================================
+   CHAT
+========================================================= */
 .chat-title {
+    font-size: 24px;
     text-align: center;
-    font-size: 22px;
     margin-bottom: 12px;
     color: #9bcdff;
 }
@@ -167,49 +220,103 @@ body {
     border-radius: 14px;
 }
 
+/* BOLHA DO USUÁRIO */
 .chat-message.user .bubble {
     background: #007bff;
     color: white;
 }
 
+/* BOLHA DA IA */
 .chat-message.ia .bubble {
     background: #020617;
     color: #e5e7eb;
 }
 
-/* Inputs */
-.tag-input-row,
+/* Input do chat */
 .chat-input-row {
     display: flex;
     gap: 8px;
-    margin-bottom: 12px;
 }
 
-input[type="text"] {
-    flex: 0.5;
-    padding: 8px 10px;
-    border-radius: 999px;
-    border: 1px solid #465776;
+.chat-input-row input {
+    flex: 1;
+    height: 45px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 2px solid #465776;
     background: #10172a;
     color: white;
+    font-size: 15px;
 }
 
-button {
-    padding: 8px 10px;
-    border-radius: 999px;
-    border: none;
-    cursor: pointer;
+#btn-send {
+    height: 45px;
+    padding: 0 18px;
+    font-size: 15px;
+    border-radius: 12px;
     background: linear-gradient(135deg, #22c55e, #16a34a);
-    color: white;
 }
 
-/* Responsivo */
-@media (max-width: 900px) {
+/* =========================================================
+   MOBILE (ATÉ 600PX)
+========================================================= */
+@media (max-width: 600px) {
+
     .container {
         flex-direction: column;
     }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    .panel-title, .chat-title {
+        font-size: 18px;
+    }
+
+    /* TAG + botão maiores */
+    #tag, #btn-load-player {
+        height: 48px;
+        font-size: 15px;
+    }
+
+    /* cartas menores em mobile */
+    .card img {
+        width: 60px;
+    }
+
+    .card-grid {
+        gap: 10px;
+    }
+
+    /* chat menor para caber na tela */
+    .chat-log {
+        max-height: 55vh;
+    }
+
+    .player-output {
+        max-height: calc(100vh - 220px);
+    }
 }
-/* Aumentar leve espaçamento entre linhas */
-body, p, span, li, input, button, .bubble {
-    line-height: 1.35; /* ajuste fino, pode trocar para 1.40 se quiser mais */
+
+/* =========================================================
+   TABLETS (600–900PX)
+========================================================= */
+@media (max-width: 900px) {
+
+    .container {
+        flex-direction: column;
+    }
+
+    .card img {
+        width: 65px;
+    }
+
+    #tag, #btn-load-player {
+        height: 46px;
+    }
+
+    .chat-log {
+        max-height: 60vh;
+    }
 }

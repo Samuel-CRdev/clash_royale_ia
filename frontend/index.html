@@ -19,18 +19,22 @@
 
             <h2 class="panel-title">Perfil do Jogador</h2>
 
-            <div class="tag-input-row">
-                <input id="tag" type="text" placeholder="Digite sua TAG (#ABC123)" />
-                <button id="btn-load-player" onclick="loadPlayer()">Carregar</button>
-            </div>
-
             <div id="player-output" class="player-output redesigned">
-                <p class="hint">
-                    Digite sua TAG do Clash Royale e clique em <b>Carregar</b> para ver seus dados e liberar o chat.
-                </p>
-            </div>
 
+                <div class="player-info-top">
+                    <div class="tag-input-row inside-box">
+                        <input id="tag" type="text" placeholder="Digite sua TAG (#ABC123)" />
+                        <button id="btn-load-player" onclick="loadPlayer()">Carregar</button>
+                    </div>
+
+                    <p class="hint">
+                        Digite sua TAG do Clash Royale e clique em <b>Carregar</b> para ver seus dados.
+                    </p>
+                </div>
+
+            </div>
         </section>
+
 
         <!-- PAINEL DIREITO: CHAT AUMENTADO -->
         <section class="chat-panel">
