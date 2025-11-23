@@ -175,31 +175,52 @@ body {
    CARTAS – APENAS ESTE BLOCO TEM SCROLL
 -------------------------------------------------------- */
 .cards-scroll-box {
-    max-height: 260px;        /* desktop: altura razoável */
+    max-height: 260px;
     overflow-y: auto;
     padding-right: 6px;
 }
 
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);  /* 5 cartas por linha */
+    grid-template-columns: repeat(5, minmax(0, 1fr));  /* 5 cartas por linha */
     gap: 8px;
 }
 
+/* CARD NOVO LAYOUT */
 .card {
     background: rgba(0,0,0,0.35);
     padding: 4px;
     border-radius: 8px;
-    text-align: center;
     border: 1px solid rgba(255,255,255,0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.card img {
-    width: 50px;
+.card-top {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 2px;
 }
 
-.card span {
+.card-top img {
+    width: 40px;
+    height: auto;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.card-name {
     font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.card-bottom {
+    font-size: 10px;
+    color: #e5e7eb;
+    padding-left: 2px;
 }
 
 /* -------------------------------------------------------
@@ -214,7 +235,7 @@ body {
 
 /* CHAT FIXO COM SCROLL PRÓPRIO */
 .chat-log {
-    height: 380px;
+    height: 380px;           /* desktop: altura fixa confortável */
     overflow-y: auto;
     background: rgba(0,0,0,0.25);
     padding: 12px;
@@ -282,32 +303,52 @@ body {
 }
 
 /* -------------------------------------------------------
-   MOBILE
+   MOBILE – MODO "DUAS TELAS" COM SCROLL-SNAP
 -------------------------------------------------------- */
 @media (max-width: 600px) {
 
     body {
-        padding: 16px;
+        padding: 0;
     }
 
     .main-title {
-        font-size: 26px;
+        font-size: 24px;
+        margin-top: 8px;
+    }
+
+    .dev-title {
+        margin-bottom: 12px;
     }
 
     .container {
         max-width: 100%;
+        padding: 0 8px 16px;
+        gap: 8px;
     }
 
-    /* cartas ainda em 5 colunas, mas menores */
-    .card img {
-        width: 44px;
+    html, body {
+        scroll-snap-type: y mandatory;
+    }
+
+    .player-panel,
+    .chat-panel {
+        min-height: 100vh;
+        scroll-snap-align: start;
+        display: flex;
+        flex-direction: column;
     }
 
     .cards-scroll-box {
-        max-height: 50vh;   /* player ocupa boa parte da tela */
+        max-height: 50vh;
+    }
+
+    .card-top img {
+        width: 36px;
     }
 
     .chat-log {
-        height: 60vh;       /* chat quase "tela cheia" */
+        flex: 1;
+        height: auto;
+        min-height: 0;
     }
 }

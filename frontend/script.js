@@ -112,7 +112,6 @@ async function loadPlayer() {
       const url =
         (c.iconUrls && (c.iconUrls.medium || c.iconUrls.small)) || "";
 
-      // Nível bruto da API
       let levelApi = Number(c.level ?? c.levelUi ?? 0);
       let maxLevelApi = Number(c.maxLevel ?? 14);
 
@@ -121,24 +120,18 @@ async function loadPlayer() {
         maxLevelApi = 14;
       }
 
-      // Fórmula geral:
-      //  - API: level 1..maxLevelApi (depende da raridade)
-      //  - UI:  níveis 1..14 (15 reservado p/ Elite)
-      //  - startUi = 15 - maxLevelApi
-      //  - levelUi = startUi + (levelApi - 1) = levelApi + (14 - maxLevelApi)
+      // Fórmula geral: UI = levelApi + (14 - maxLevelApi)
       let levelUi = levelApi + (14 - maxLevelApi);
 
       if (levelUi < 1) levelUi = 1;
       if (levelUi > 15) levelUi = 15;
 
-      // Evolução NÃO altera o nível
       const evolutionLevel = Number(c.evolutionLevel ?? 0);
       let evolutionTag = "";
       if (Number.isFinite(evolutionLevel) && evolutionLevel > 0) {
         evolutionTag = ` • Evo ${evolutionLevel}`;
       }
 
-      // Rótulo qualitativo por nível
       let status;
       if (levelUi === 15) status = "Elite";
       else if (levelUi === 14) status = "Máx";
@@ -147,7 +140,6 @@ async function loadPlayer() {
       else if (levelUi >= 10) status = "Ok";
       else status = "Fraco";
 
-      // Puxar info extra da lista /cards (raridade, custo)
       let rarityRaw = c.rarity || "Unknown";
       let elixirCost = c.elixirCost ?? null;
 
@@ -165,7 +157,6 @@ async function loadPlayer() {
 
       const rarity = String(rarityRaw).toLowerCase();
 
-      // Guardar também no objeto original para a IA
       c.levelUi = levelUi;
       c.levelStatus = status;
       c.evolutionUi = evolutionLevel;
@@ -177,7 +168,7 @@ async function loadPlayer() {
         iconUrl: url,
         levelUi,
         status,
-        rarity,       // comum, rare, epic, legendary...
+        rarity,
         rarityLabel: rarityRaw,
         elixirCost: Number.isFinite(elixirCost) ? elixirCost : null,
         evolutionLevel,
@@ -234,7 +225,6 @@ async function loadPlayer() {
 
     out.innerHTML = html;
 
-    // Ligar eventos dos filtros e renderizar as cartas
     setupCardFilters();
     renderCardsGrid();
   } catch (e) {
@@ -281,14 +271,12 @@ function renderCardsGrid() {
   const rarityValue = (raritySel?.value || "all").toLowerCase();
   const sortValue = sortSel?.value || "level_desc";
 
-  // Filtrar por raridade
   if (rarityValue !== "all") {
     cards = cards.filter(
       (c) => c.rarity && c.rarity.toLowerCase() === rarityValue
     );
   }
 
-  // Ordenação
   cards.sort((a, b) => {
     switch (sortValue) {
       case "level_asc":
@@ -310,7 +298,6 @@ function renderCardsGrid() {
     }
   });
 
-  // Renderizar HTML das cartas
   grid.innerHTML = cards
     .map((card) => {
       const elixirTag =
@@ -318,8 +305,13 @@ function renderCardsGrid() {
       const evoTag = card.evolutionTag || "";
       return `
         <div class="card">
-          <img src="${card.iconUrl}" alt="${card.name}">
-          <span>${card.name} — Nv ${card.levelUi} (${card.status})${evoTag}${elixirTag}</span>
+          <div class="card-top">
+            <img src="${card.iconUrl}" alt="${card.name}">
+            <div class="card-name">${card.name}</div>
+          </div>
+          <div class="card-bottom">
+            <span>Nv ${card.levelUi} (${card.status})${evoTag}${elixirTag}</span>
+          </div>
         </div>
       `;
     })
@@ -368,7 +360,6 @@ async function enviarChat() {
 
   let payload;
 
-  // PRIMEIRA MENSAGEM: manda contexto completo (player + cartas)
   if (!contextoEnviado) {
     payload = {
       mensagem: msg,
