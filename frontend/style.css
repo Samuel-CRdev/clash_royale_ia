@@ -233,7 +233,7 @@ body {
     color: #9bcdff;
 }
 
-/* CHAT FIXO COM SCROLL PRÓPRIO */
+/* CHAT FIXO COM SCROLL PRÓPRIO (desktop) */
 .chat-log {
     height: 380px;           /* desktop: altura fixa confortável */
     overflow-y: auto;
@@ -303,12 +303,12 @@ body {
 }
 
 /* -------------------------------------------------------
-   MOBILE – AJUSTE SEM SCROLL-SNAP / SEM VAZIO EXTRA
+   MOBILE – SEM SCROLL-SNAP, CHAT MAIOR NA TELA
 -------------------------------------------------------- */
 @media (max-width: 600px) {
 
     body {
-        padding: 12px;              /* um pouco de respiro, mas sem exagero */
+        padding: 12px 8px 8px;   /* menos padding, mais área útil */
     }
 
     .main-title {
@@ -326,26 +326,30 @@ body {
         gap: 12px;
     }
 
-    /* REMOVENDO O SCROLL-SNAP E MIN-HEIGHT FORÇADO */
+    /* nada de scroll-snap ou min-height forçada */
     html, body {
         scroll-snap-type: none;
     }
 
     .player-panel,
     .chat-panel {
-        min-height: auto;          /* deixa o conteúdo ditar a altura */
+        min-height: auto;
         scroll-snap-align: none;
     }
 
     .cards-scroll-box {
-        max-height: 220px;         /* um pouco menor pra caber melhor */
+        max-height: 220px;
     }
 
     .card-top img {
         width: 36px;
     }
 
+    /* aqui é o pulo do gato:
+       - em vez de 320px fixos, usa parte da altura da tela
+       - fica grande em telas grandes, menor em telas menores */
     .chat-log {
-        height: 320px;             /* altura um pouco menor no mobile */
+        height: 50vh;          /* ~metade da altura da tela */
+        max-height: 420px;     /* não passa demais em telas muito altas */
     }
 }
