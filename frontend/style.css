@@ -88,17 +88,17 @@ body {
 /* TAG + BOTÃO dentro da caixa */
 .tag-input-row.inside-box {
     display: flex;
-    gap: 4px;
+    gap: 8px;
     margin-bottom: 10px;
 }
 
 #tag {
-    flex: 0.8;
+    flex: 1.2;
     height: 44px;
     border-radius: 12px;
     background: #10172a;
     border: 2px solid #3b82f6;
-    padding: 0 14px;
+    padding: 0 2px;
     font-size: 15px;
     color: white;
 }
