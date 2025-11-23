@@ -7,9 +7,9 @@ let contextoEnviado = false;
 let loadingPlayer = false;
 let loadingCards = false;
 
-/* --------------------------------------------------
-   PRÉ-CARREGAR TODAS AS CARTAS
--------------------------------------------------- */
+// --------------------------------------------------
+// PRÉ-CARREGAR TODAS AS CARTAS
+// --------------------------------------------------
 async function preloadAllCards() {
   if (loadingCards || cachedAllCards) return;
   loadingCards = true;
@@ -30,13 +30,12 @@ async function preloadAllCards() {
   }
 }
 
-/* --------------------------------------------------
-   AO CARREGAR A PÁGINA
--------------------------------------------------- */
+// --------------------------------------------------
+// AO CARREGAR A PÁGINA
+// --------------------------------------------------
 window.addEventListener("load", () => {
   preloadAllCards();
 
-  // Enter no campo de mensagem envia o chat
   const msgInput = document.getElementById("msg");
   if (msgInput) {
     msgInput.addEventListener("keydown", (e) => {
@@ -48,9 +47,9 @@ window.addEventListener("load", () => {
   }
 });
 
-/* --------------------------------------------------
-   CARREGAR JOGADOR
--------------------------------------------------- */
+// --------------------------------------------------
+// FUNÇÃO: CARREGAR JOGADOR
+// --------------------------------------------------
 async function loadPlayer() {
   if (loadingPlayer) return;
 
@@ -93,6 +92,7 @@ async function loadPlayer() {
       return;
     }
 
+    // Guardar player no cache (vamos mutar as cartas já normalizadas)
     cachedPlayer = data;
 
     const nome = data.name || "Desconhecido";
@@ -121,32 +121,56 @@ async function loadPlayer() {
           <div class="card-grid">
     `;
 
-    // Renderizar TODAS as cartas dentro do bloco scrollável
+    // Normalizar níveis das cartas (API -> UI)
     for (const c of data.cards || []) {
-      const url = (c.iconUrls && (c.iconUrls.medium || c.iconUrls.small)) || "";
-      let level = c.levelUi ?? c.level ?? 0;
+      const url =
+        (c.iconUrls && (c.iconUrls.medium || c.iconUrls.small)) || "";
 
-      // Normaliza o nível para o novo sistema (máx = 15)
-      if (level > 15) level = 15;
-      if (level <= 0) level = 1;
+      // Nível bruto da API
+      let levelApi = Number(c.level ?? c.levelUi ?? 0);
+      let maxLevelApi = Number(c.maxLevel ?? 14);
 
-      // Define rótulo de status
-      let status = "";
-      if (level === 15) status = " (Elite)";
-      else if (level >= 14) status = " (Máx)";
-      else if (level >= 13) status = " (Excelente)";
-      else if (level >= 12) status = " (Bom)";
-      else if (level >= 10) status = " (Ok)";
-      else status = " (Fraco)";
+      if (!Number.isFinite(levelApi) || levelApi <= 0) levelApi = 1;
+      if (!Number.isFinite(maxLevelApi) || maxLevelApi <= 0)
+        maxLevelApi = 14;
+
+      // Fórmula geral:
+      //  - API: level 1..maxLevelApi (depende da raridade)
+      //  - UI:  níveis 1..14 (15 = Elite)
+      //  - startUi = 15 - maxLevelApi
+      //  - levelUi = startUi + (levelApi - 1) = levelApi + (14 - maxLevelApi)
+      let levelUi = levelApi + (14 - maxLevelApi);
+
+      // Clamp entre 1 e 14 inicialmente
+      if (levelUi < 1) levelUi = 1;
+      if (levelUi > 14) levelUi = 14;
+
+      // Se tiver evolução (carta evoluída), tratamos como nível 15 (Elite)
+      const evolutionLevel = Number(c.evolutionLevel ?? 0);
+      if (Number.isFinite(evolutionLevel) && evolutionLevel > 0) {
+        levelUi = 15;
+      }
+
+      // Rótulo qualitativo
+      let status;
+      if (levelUi === 15) status = "Elite";
+      else if (levelUi === 14) status = "Máx";
+      else if (levelUi >= 13) status = "Excelente";
+      else if (levelUi >= 12) status = "Bom";
+      else if (levelUi >= 10) status = "Ok";
+      else status = "Fraco";
+
+      // Guardar no objeto para a IA também enxergar
+      c.levelUi = levelUi;
+      c.levelStatus = status;
 
       html += `
         <div class="card">
           <img src="${url}" alt="${c.name || "Carta"}">
-          <span>${c.name || "Carta"} — Nv ${level}${status}</span>
+          <span>${c.name || "Carta"} — Nv ${levelUi} (${status})</span>
         </div>
       `;
     }
-
 
     html += `
           </div>
@@ -172,9 +196,9 @@ async function loadPlayer() {
   }
 }
 
-/* --------------------------------------------------
-   CHAT — UI
--------------------------------------------------- */
+// --------------------------------------------------
+// CHAT — UI
+// --------------------------------------------------
 function addChatMessage(role, text) {
   const chatDiv = document.getElementById("chat");
   if (!chatDiv) return;
@@ -192,9 +216,9 @@ function addChatMessage(role, text) {
   chatDiv.scrollTop = chatDiv.scrollHeight;
 }
 
-/* --------------------------------------------------
-   CHAT — ENVIAR MENSAGEM
--------------------------------------------------- */
+// --------------------------------------------------
+// CHAT — ENVIAR MENSAGEM
+// --------------------------------------------------
 async function enviarChat() {
   const input = document.getElementById("msg");
   if (!input) return;
@@ -214,7 +238,7 @@ async function enviarChat() {
 
   let payload;
 
-  // PRIMEIRA MENSAGEM: manda contexto completo
+  // PRIMEIRA MENSAGEM: manda contexto completo (player + cartas)
   if (!contextoEnviado) {
     payload = {
       mensagem: msg,
@@ -255,6 +279,7 @@ async function enviarChat() {
     addChatMessage("ia", data.resposta);
   } catch (err) {
     console.error("Erro no enviarChat:", err);
+
     const chatDiv = document.getElementById("chat");
     if (chatDiv) {
       const iaMessages = chatDiv.querySelectorAll(".chat-message.ia");
@@ -263,13 +288,14 @@ async function enviarChat() {
         lastIa.remove();
       }
     }
+
     addChatMessage("ia", "Erro ao enviar mensagem.");
   }
 }
 
-/* --------------------------------------------------
-   LIMPAR CACHE AO FECHAR/RECARREGAR A PÁGINA
--------------------------------------------------- */
+// --------------------------------------------------
+// LIMPAR CACHE AO FECHAR/RECARREGAR A PÁGINA
+// --------------------------------------------------
 window.addEventListener("beforeunload", () => {
   cachedPlayer = null;
   cachedAllCards = null;
