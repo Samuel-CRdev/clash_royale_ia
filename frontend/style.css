@@ -87,11 +87,13 @@ body {
     overflow: hidden;
 }
 
-/* TAG + BOTÃO REMODELADOS (BOTÃO AGORA EMBAIXO) */
+.player-info-top {
+    margin-bottom: 12px;
+}
+
+/* TAG + BOTÃO (BOTÃO EMBAIXO DO INPUT) */
 .tag-input-row.inside-box {
-    display: flex;
-    flex-direction: column; /* <-- botão vai para baixo */
-    gap: 8px;
+    display: block !important; /* força layout em bloco, não flex */
     margin-bottom: 14px;
 }
 
@@ -104,6 +106,8 @@ body {
     padding: 0 14px;
     font-size: 15px;
     color: white;
+    display: block;
+    margin-bottom: 8px; /* espaço entre input e botão */
 }
 
 #btn-load-player {
@@ -117,6 +121,7 @@ body {
     border: none;
     cursor: pointer;
     transition: 0.1s ease;
+    display: block;
 }
 
 #btn-load-player:hover {
@@ -161,7 +166,7 @@ body {
 }
 
 .card img {
-    width: 50px; /* menor para não vazar */
+    width: 50px;
 }
 
 .card span {
