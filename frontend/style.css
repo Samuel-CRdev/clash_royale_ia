@@ -27,6 +27,7 @@ h1 {
 }
 
 h2 {
+    text-align: center;
     font-size: 18px;
     margin-bottom: 12px;
 }
@@ -41,19 +42,19 @@ h2 {
 /* Painéis principais */
 .player-panel,
 .chat-panel {
-    background: rgba(52, 27, 87, 0.9);
+    background: rgba(36, 19, 59, 0.9);
     border-radius: 16px;
     padding: 16px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
 .player-panel {
-    flex: 1;
+    flex: 0.7;
     min-width: 0;
 }
 
 .chat-panel {
-    flex: 1.2;
+    flex: 2.0;
     min-width: 0;
     display: flex;
     flex-direction: column;
